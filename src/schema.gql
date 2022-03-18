@@ -1,3 +1,9 @@
 type Query {
-  hello: String!
+  hello(name: String!): String!
+  goodbye: String!
+  person: Person
+}
+
+type Person {
+  name: String
 }

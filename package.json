@@ -4,17 +4,22 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon -w src -e js,gql src/index.js",
-    "elm:build": "elm make src/Worker.elm --output=dist/elm.worker.js"
+    "start": "npm install && npm run dev",
+    "dev": "concurrently -n 🚀,🌳 'npm:server:dev' 'npm:elm:dev'",
+    "server:dev": "nodemon -w src -w dist -e js,gql src/index.js",
+    "elm:build": "elm make src/Worker.elm --output=dist/elm.worker.js",
+    "elm:dev": "chokidar src/**/*.elm --initial true -c 'npm run elm:build'"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "apollo-server": "^3.6.4",
-    "apollo-server-core": "^3.6.4",
-    "elm": "*",
-    "graphql": "^16.3.0",
-    "nodemon": "^2.0.15"
+    "apollo-server": "3.6.4",
+    "apollo-server-core": "3.6.4",
+    "chokidar-cli": "3.0.0",
+    "concurrently": "7.0.0",
+    "elm": "0.19.1-5",
+    "graphql": "16.3.0",
+    "nodemon": "2.0.15"
   }
 }
