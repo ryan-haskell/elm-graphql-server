@@ -41,7 +41,8 @@ encode maybePerson =
 
 
 type alias Arguments =
-    { id : Maybe Int }
+    { id : Maybe Int
+    }
 
 
 argumentsDecoder : Json.Decode.Decoder Arguments
