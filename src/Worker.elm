@@ -1,24 +1,32 @@
 port module Worker exposing (main)
 
-import Json.Decode as Json
+import Dict exposing (Dict)
+import GraphQL.Response exposing (Response)
+import Json.Decode
 import Json.Encode
 import Platform
+import Random
 import Resolvers.Person.Email
 import Resolvers.Person.Id
 import Resolvers.Person.Name
 import Resolvers.Query.Goodbye
 import Resolvers.Query.Hello
 import Resolvers.Query.Person
-import Scalar.Id
 
 
-port success : Json.Value -> Cmd msg
+port success : Json.Decode.Value -> Cmd msg
 
 
-port failure : Json.Value -> Cmd msg
+port failure : Json.Decode.Value -> Cmd msg
 
 
-main : Program Json.Value Model Msg
+port databaseOut : { id : RequestId, sql : String } -> Cmd msg
+
+
+port databaseIn : ({ id : RequestId, response : Json.Decode.Value } -> msg) -> Sub msg
+
+
+main : Program Json.Decode.Value Model Msg
 main =
     Platform.worker
         { init = init
@@ -31,25 +39,27 @@ main =
 -- INIT
 
 
-type Model
-    = Model
+type alias Model =
+    { requests : Dict RequestId (Json.Decode.Value -> Cmd Msg)
+    }
 
 
-init : Json.Value -> ( Model, Cmd Msg )
+init : Json.Decode.Value -> ( Model, Cmd Msg )
 init flags =
-    ( Model
+    ( { requests = Dict.empty
+      }
     , case
-        Json.decodeValue
-            (Json.map2 Tuple.pair
-                (Json.field "objectName" Json.string)
-                (Json.field "fieldName" Json.string)
+        Json.Decode.decodeValue
+            (Json.Decode.map2 Tuple.pair
+                (Json.Decode.field "objectName" Json.Decode.string)
+                (Json.Decode.field "fieldName" Json.Decode.string)
             )
             flags
       of
         Ok ( "Query", "hello" ) ->
             createResolver
                 { flags = flags
-                , parentDecoder = Json.succeed ()
+                , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Query.Hello.argumentDecoder
                 , resolver = Resolvers.Query.Hello.resolver
                 , toJson = Json.Encode.string
@@ -58,8 +68,8 @@ init flags =
         Ok ( "Query", "goodbye" ) ->
             createResolver
                 { flags = flags
-                , parentDecoder = Json.succeed ()
-                , argsDecoder = Json.succeed ()
+                , parentDecoder = Json.Decode.succeed ()
+                , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Query.Goodbye.resolver
                 , toJson = Json.Encode.string
                 }
@@ -67,8 +77,8 @@ init flags =
         Ok ( "Query", "person" ) ->
             createResolver
                 { flags = flags
-                , parentDecoder = Json.succeed ()
-                , argsDecoder = Json.succeed ()
+                , parentDecoder = Json.Decode.succeed ()
+                , argsDecoder = Resolvers.Query.Person.argumentsDecoder
                 , resolver = Resolvers.Query.Person.resolver
                 , toJson = Resolvers.Query.Person.encode
                 }
@@ -77,16 +87,16 @@ init flags =
             createResolver
                 { flags = flags
                 , parentDecoder = Resolvers.Query.Person.decoder
-                , argsDecoder = Json.succeed ()
+                , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Person.Id.resolver
-                , toJson = Scalar.Id.encode
+                , toJson = Json.Encode.int
                 }
 
         Ok ( "Person", "name" ) ->
             createResolver
                 { flags = flags
                 , parentDecoder = Resolvers.Query.Person.decoder
-                , argsDecoder = Json.succeed ()
+                , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Person.Name.resolver
                 , toJson = Json.Encode.string
                 }
@@ -95,7 +105,7 @@ init flags =
             createResolver
                 { flags = flags
                 , parentDecoder = Resolvers.Query.Person.decoder
-                , argsDecoder = Json.succeed ()
+                , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Person.Email.resolver
                 , toJson = Maybe.map Json.Encode.string >> Maybe.withDefault Json.Encode.null
                 }
@@ -115,44 +125,33 @@ init flags =
 
 
 createResolver :
-    { flags : Json.Value
-    , parentDecoder : Json.Decoder parent
-    , argsDecoder : Json.Decoder args
+    { flags : Json.Decode.Value
+    , parentDecoder : Json.Decode.Decoder parent
+    , argsDecoder : Json.Decode.Decoder args
     , resolver : parent -> args -> Response value
-    , toJson : value -> Json.Value
+    , toJson : value -> Json.Decode.Value
     }
-    -> Cmd msg
+    -> Cmd Msg
 createResolver options =
     let
-        inputDecoder : Json.Decoder { parent : parent, args : args }
+        inputDecoder : Json.Decode.Decoder { parent : parent, args : args }
         inputDecoder =
-            Json.map2 (\p a -> { parent = p, args = a })
-                (Json.field "parent" options.parentDecoder)
-                (Json.field "args" options.argsDecoder)
+            Json.Decode.map2 (\p a -> { parent = p, args = a })
+                (Json.Decode.field "parent" options.parentDecoder)
+                (Json.Decode.field "args" options.argsDecoder)
     in
-    case Json.decodeValue inputDecoder options.flags of
+    case Json.Decode.decodeValue inputDecoder options.flags of
         Ok { parent, args } ->
             options.resolver parent args
-                |> Result.map options.toJson
-                |> toJavaScript
+                |> GraphQL.Response.toCmd
+                    { onSuccess = options.toJson >> success
+                    , onFailure = failure
+                    , onDatabaseQuery = ResolverSentDatabaseQuery
+                    }
 
         Err _ ->
-            Err (Json.Encode.string "Failed to decode parent/args.")
-                |> toJavaScript
-
-
-toJavaScript : Result Json.Value Json.Value -> Cmd msg
-toJavaScript result =
-    case result of
-        Ok value ->
-            success value
-
-        Err reason ->
-            failure reason
-
-
-type alias Response value =
-    Result Json.Value value
+            Json.Encode.string "Failed to decode parent/args."
+                |> failure
 
 
 
@@ -160,14 +159,43 @@ type alias Response value =
 
 
 type Msg
-    = NoOp
+    = ResolverSentDatabaseQuery { sql : String, onResponse : Json.Decode.Value -> Cmd Msg }
+    | WorkerGeneratedRequestId { sql : String, onResponse : Json.Decode.Value -> Cmd Msg } RequestId
+    | JavascriptSentDatabaseResponse { id : RequestId, response : Json.Decode.Value }
+
+
+type alias RequestId =
+    Int
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        NoOp ->
-            ( model, Cmd.none )
+        ResolverSentDatabaseQuery options ->
+            ( model
+            , Random.int 0 Random.maxInt
+                |> Random.generate (WorkerGeneratedRequestId options)
+            )
+
+        WorkerGeneratedRequestId options requestId ->
+            ( { model | requests = Dict.insert requestId options.onResponse model.requests }
+            , databaseOut
+                { id = requestId
+                , sql = options.sql
+                }
+            )
+
+        JavascriptSentDatabaseResponse { id, response } ->
+            case Dict.get id model.requests of
+                Just onResponse ->
+                    ( { model | requests = Dict.remove id model.requests }
+                    , onResponse response
+                    )
+
+                Nothing ->
+                    ( model
+                    , failure (Json.Encode.string ("Couldn't find a request with ID: " ++ String.fromInt id))
+                    )
 
 
 
@@ -176,4 +204,4 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Sub.none
+    databaseIn JavascriptSentDatabaseResponse

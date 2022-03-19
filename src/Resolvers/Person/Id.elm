@@ -1,10 +1,9 @@
 module Resolvers.Person.Id exposing (resolver)
 
-import GraphQL
+import GraphQL.Response exposing (Response)
 import Resolvers.Query.Person exposing (Person)
-import Scalar.Id
 
 
-resolver : Person -> () -> GraphQL.Response Scalar.Id.Id
+resolver : Person -> () -> Response Int
 resolver person args =
-    Ok person.id
+    GraphQL.Response.ok person.id

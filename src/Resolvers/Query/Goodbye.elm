@@ -1,8 +1,8 @@
 module Resolvers.Query.Goodbye exposing (resolver)
 
-import GraphQL
+import GraphQL.Response exposing (Response)
 
 
-resolver : () -> () -> GraphQL.Response String
+resolver : () -> () -> Response String
 resolver parent args =
-    Ok "Goodbye!"
+    GraphQL.Response.ok "Goodbye!"

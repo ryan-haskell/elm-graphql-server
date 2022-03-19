@@ -1,9 +1,9 @@
 module Resolvers.Person.Name exposing (resolver)
 
-import GraphQL
+import GraphQL.Response exposing (Response)
 import Resolvers.Query.Person exposing (Person)
 
 
-resolver : Person -> () -> GraphQL.Response String
+resolver : Person -> () -> Response String
 resolver person args =
-    Ok person.name
+    GraphQL.Response.ok person.name

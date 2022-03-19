@@ -1,7 +1,7 @@
 module Resolvers.Query.Hello exposing (Arguments, argumentDecoder, resolver)
 
-import GraphQL
-import Json.Decode as Json
+import GraphQL.Response exposing (Response)
+import Json.Decode
 
 
 type alias Arguments =
@@ -9,17 +9,17 @@ type alias Arguments =
     }
 
 
-argumentDecoder : Json.Decoder Arguments
+argumentDecoder : Json.Decode.Decoder Arguments
 argumentDecoder =
-    Json.map Arguments
-        (Json.maybe (Json.field "name" Json.string))
+    Json.Decode.map Arguments
+        (Json.Decode.maybe (Json.Decode.field "name" Json.Decode.string))
 
 
-resolver : () -> Arguments -> GraphQL.Response String
+resolver : () -> Arguments -> Response String
 resolver parent args =
     case args.name of
         Just name ->
-            Ok ("Hey, " ++ name ++ "!")
+            GraphQL.Response.ok ("Hey, " ++ name ++ "!")
 
         Nothing ->
-            Ok "Hello!"
+            GraphQL.Response.ok "Hello!"

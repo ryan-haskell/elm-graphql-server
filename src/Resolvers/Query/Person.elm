@@ -1,41 +1,69 @@
-module Resolvers.Query.Person exposing (Person, decoder, encode, resolver)
+module Resolvers.Query.Person exposing (Person, argumentsDecoder, decoder, encode, resolver)
 
-import GraphQL
-import Json.Decode as Json
+import Database.Where
+import GraphQL.Response exposing (Response)
+import Json.Decode
 import Json.Encode
-import Scalar.Id
+import Table.People
+import Table.People.Select
+import Table.People.Where.Id
 
 
 type alias Person =
-    { id : Scalar.Id.Id
+    { id : Int
     , name : String
     , email : Maybe String
     }
 
 
-decoder : Json.Decoder Person
+decoder : Json.Decode.Decoder Person
 decoder =
-    Json.map3 Person
-        (Json.field "id" Scalar.Id.decoder)
-        (Json.field "name" Json.string)
-        (Json.maybe (Json.field "email" Json.string))
+    Json.Decode.map3 Person
+        (Json.Decode.field "id" Json.Decode.int)
+        (Json.Decode.field "name" Json.Decode.string)
+        (Json.Decode.maybe (Json.Decode.field "email" Json.Decode.string))
 
 
-encode : Person -> Json.Value
-encode person =
-    Json.Encode.object
-        (List.filterMap identity
-            [ Just ( "id", Scalar.Id.encode person.id )
-            , Just ( "name", Json.Encode.string person.name )
-            , person.email |> Maybe.map (\email -> ( "email", Json.Encode.string email ))
-            ]
-        )
+encode : Maybe Person -> Json.Decode.Value
+encode maybePerson =
+    case maybePerson of
+        Just person ->
+            Json.Encode.object
+                (List.filterMap identity
+                    [ Just ( "id", Json.Encode.int person.id )
+                    , Just ( "name", Json.Encode.string person.name )
+                    , person.email |> Maybe.map (\email -> ( "email", Json.Encode.string email ))
+                    ]
+                )
+
+        Nothing ->
+            Json.Encode.null
 
 
-resolver : () -> () -> GraphQL.Response Person
+type alias Arguments =
+    { id : Maybe Int }
+
+
+argumentsDecoder : Json.Decode.Decoder Arguments
+argumentsDecoder =
+    Json.Decode.map Arguments
+        (Json.Decode.maybe (Json.Decode.field "id" Json.Decode.int))
+
+
+resolver : () -> Arguments -> Response (Maybe Person)
 resolver parent args =
-    Ok
-        { id = Scalar.Id.fromString "1"
-        , name = "Ryan Haskell-Glatz"
-        , email = Nothing
+    Table.People.findOne
+        { where_ =
+            case args.id of
+                Just id ->
+                    Just (Table.People.Where.Id.equals id)
+
+                Nothing ->
+                    Nothing
+        , select =
+            Table.People.Select.new Person
+                |> Table.People.Select.id
+                |> Table.People.Select.name
+                |> Table.People.Select.email
         }
+        |> GraphQL.Response.fromQuery

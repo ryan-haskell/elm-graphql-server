@@ -8,6 +8,44 @@ const silent = (fn) => {
   return value
 }
 
+const Database = {
+  start: async () => {
+    const sqlite3 = require('sqlite3')
+    const { open } = require('sqlite')
+
+    // Open the database
+    db = await open({
+      filename: './database.db',
+      driver: sqlite3.Database
+    })
+
+    // CREATE TABLES
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS people (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT
+      )
+    `)
+    
+    const result = await db.all('SELECT id FROM people LIMIT 1')
+    if (result.length === 0) {
+      console.log('💾 Empty database detected, initializing!')
+      await db.exec(`
+          INSERT INTO people ( name, email ) VALUES
+            ( "Ryan" , "ryan@elm.land" ),
+            ( "Duncan" , "duncan@elm.land" ),
+            ( "Scott" , "scott@elm.land" )
+      `)
+    } else {
+      console.log('💾 SQL database ready!')
+    }
+    
+    return db
+  }
+}
+
+
 const fs = require("fs")
 const path = require("path")
 const { Elm } = silent(() => require("../dist/elm.worker"))
@@ -22,9 +60,9 @@ const typeDefs = fs.readFileSync(path.join(__dirname, "schema.gql"), {
 })
 
 const fieldHandler = (objectName) => ({
-  get(target, fieldName, receiver) {
+  get (target, fieldName, receiver) {
     if (fieldName === "__isTypeOf") return () => objectName
-    return (parent, args) => {
+    return (parent, args, context) => {
       let worker = Elm.Worker.init({
         flags: { objectName, fieldName, parent, args },
       })
@@ -32,6 +70,10 @@ const fieldHandler = (objectName) => ({
       return new Promise((resolve, reject) => {
         worker.ports.success.subscribe(resolve)
         worker.ports.failure.subscribe((json) => reject(Error(json)))
+        worker.ports.databaseOut.subscribe(async ({ id, sql }) => {
+          let response = await context.db.all(sql)
+          worker.ports.databaseIn.send({ id, response })
+        })
       })
     }
   },
@@ -47,14 +89,21 @@ const resolvers = new Proxy(
 )
 
 const start = async () => {
+  // Start up sqlite database
+  let db = await Database.start()
+
+  // Start GraphQL server
   const server = new ApolloServer({
     typeDefs,
     resolvers,
+    context: { db },
     plugins: [ApolloServerPluginLandingPageGraphQLPlayground()],
   })
+
+
   const { url } = await server.listen()
 
-  console.log(`GraphQL API ready at ${url}`)
+  console.log(`✨ GraphQL API ready at ${url}`)
 }
 
 start()

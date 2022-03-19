@@ -12,7 +12,7 @@ module Scalar.Id exposing
 
 -}
 
-import Json.Decode as Json
+import Json.Decode
 import Json.Encode
 
 
@@ -30,11 +30,12 @@ toString (Id idStr) =
     idStr
 
 
-decoder : Json.Decoder Id
+decoder : Json.Decode.Decoder Id
 decoder =
-    Json.string |> Json.map fromString
+    Json.Decode.string
+        |> Json.Decode.map fromString
 
 
-encode : Id -> Json.Value
+encode : Id -> Json.Decode.Value
 encode id =
     Json.Encode.string (toString id)
