@@ -1,7 +1,7 @@
 module GraphQL.Response exposing
     ( Response
     , ok, err
-    , fromQuery
+    , fromDatabaseQuery
     , toCmd
     )
 
@@ -9,7 +9,7 @@ module GraphQL.Response exposing
 
 @docs Response
 @docs ok, err
-@docs fromQuery
+@docs fromDatabaseQuery
 
 @docs toCmd
 
@@ -40,8 +40,8 @@ err reason =
     Failure reason
 
 
-fromQuery : Database.Query.Query column value -> Response value
-fromQuery query =
+fromDatabaseQuery : Database.Query.Query column value -> Response value
+fromDatabaseQuery query =
     Query
         { sql = Database.Query.toSql query
         , onResponse =

@@ -67,4 +67,4 @@ resolver parent args =
                 |> Table.People.Select.name
                 |> Table.People.Select.email
         }
-        |> GraphQL.Response.fromQuery
+        |> GraphQL.Response.fromDatabaseQuery
