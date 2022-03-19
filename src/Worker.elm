@@ -3,10 +3,13 @@ port module Worker exposing (main)
 import Json.Decode as Json
 import Json.Encode
 import Platform
+import Resolvers.Person.Email
+import Resolvers.Person.Id
 import Resolvers.Person.Name
 import Resolvers.Query.Goodbye
 import Resolvers.Query.Hello
 import Resolvers.Query.Person
+import Scalar.Id
 
 
 port success : Json.Value -> Cmd msg
@@ -47,9 +50,7 @@ init flags =
             createResolver
                 { flags = flags
                 , parentDecoder = Json.succeed ()
-                , argsDecoder =
-                    Json.map (\name -> { name = name })
-                        (Json.field "name" Json.string)
+                , argsDecoder = Resolvers.Query.Hello.argumentDecoder
                 , resolver = Resolvers.Query.Hello.resolver
                 , toJson = Json.Encode.string
                 }
@@ -72,6 +73,15 @@ init flags =
                 , toJson = Resolvers.Query.Person.encode
                 }
 
+        Ok ( "Person", "id" ) ->
+            createResolver
+                { flags = flags
+                , parentDecoder = Resolvers.Query.Person.decoder
+                , argsDecoder = Json.succeed ()
+                , resolver = Resolvers.Person.Id.resolver
+                , toJson = Scalar.Id.encode
+                }
+
         Ok ( "Person", "name" ) ->
             createResolver
                 { flags = flags
@@ -79,6 +89,15 @@ init flags =
                 , argsDecoder = Json.succeed ()
                 , resolver = Resolvers.Person.Name.resolver
                 , toJson = Json.Encode.string
+                }
+
+        Ok ( "Person", "email" ) ->
+            createResolver
+                { flags = flags
+                , parentDecoder = Resolvers.Query.Person.decoder
+                , argsDecoder = Json.succeed ()
+                , resolver = Resolvers.Person.Email.resolver
+                , toJson = Maybe.map Json.Encode.string >> Maybe.withDefault Json.Encode.null
                 }
 
         Ok ( objectName, fieldName ) ->

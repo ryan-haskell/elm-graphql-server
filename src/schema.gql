@@ -1,9 +1,11 @@
 type Query {
-  hello(name: String!): String!
+  hello(name: String): String!
   goodbye: String!
   person: Person
 }
 
 type Person {
-  name: String
+  id: ID!
+  name: String!
+  email: String
 }
