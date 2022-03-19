@@ -72,6 +72,11 @@ const fieldHandler = (objectName) => ({
         worker.ports.failure.subscribe((json) => reject(Error(json)))
         worker.ports.databaseOut.subscribe(async ({ id, sql }) => {
           let response = await context.db.all(sql)
+
+          // Logs SQL query and response to the console
+          console.log(`\n${sql}\n`)
+          console.table(response)
+
           worker.ports.databaseIn.send({ id, response })
         })
       })
