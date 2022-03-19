@@ -12,6 +12,7 @@ import Resolvers.Person.Id
 import Resolvers.Person.Name
 import Resolvers.Query.Goodbye
 import Resolvers.Query.Hello
+import Resolvers.Query.People
 import Resolvers.Query.Person
 
 
@@ -82,6 +83,15 @@ init flags =
                 , argsDecoder = Resolvers.Query.Person.argumentsDecoder
                 , resolver = Resolvers.Query.Person.resolver
                 , toJson = Json.Encode.Extra.maybe Resolvers.Query.Person.encode
+                }
+
+        Ok ( "Query", "people" ) ->
+            createResolver
+                { flags = flags
+                , parentDecoder = Json.Decode.succeed ()
+                , argsDecoder = Json.Decode.succeed ()
+                , resolver = Resolvers.Query.People.resolver
+                , toJson = Json.Encode.list Resolvers.Query.Person.encode
                 }
 
         Ok ( "Person", "id" ) ->

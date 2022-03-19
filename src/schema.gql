@@ -2,6 +2,7 @@ type Query {
   hello(name: String): String!
   goodbye: String!
   person(id: Int!): Person
+  people: [Person!]!
 }
 
 type Person {
