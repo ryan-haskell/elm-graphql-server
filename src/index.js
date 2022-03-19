@@ -10,7 +10,9 @@ const silent = (fn) => {
 
 const Database = {
   start: async () => {
-    const sqlite3 = require('sqlite3')
+    // This project requires sqlite version 3.35.0,
+    // so we cannot use the standard `sqlite3` NPM package (it's still on 3.34.0)
+    const sqlite3 = require('@louislam/sqlite3')
     const { open } = require('sqlite')
 
     // Open the database
@@ -72,7 +74,7 @@ const fieldHandler = (objectName) => ({
         worker.ports.failure.subscribe((json) => reject(Error(json)))
         worker.ports.databaseOut.subscribe(async ({ id, sql }) => {
           let response = await context.db.all(sql)
-
+          
           // Logs SQL query and response to the console
           console.log(`\n${sql}\n`)
           console.table(response)

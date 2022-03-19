@@ -28,3 +28,13 @@ I have been making modules in `src/Resolvers` to organize the code, but that's j
 This is not a production-ready thing, but I thought it would be a fun experiment to see what using the Elm language would be like for a backend GraphQL API.
 
 A real implementation would require a nice way to talk to a database, a third-party HTTP service, or do things like application logging– but for now this is all we have 🙂
+
+#### Talking to a SQL Database
+
+I've been exploring communicating to a `sqlite` database. At the moment this project supports basic:
+
+- [x] `SELECT` statements
+  - Example of `findOne` with the [`person` query](./src/Resolvers/Query/Person.elm)
+  - Example of `findAll` with the [`people` query](./src/Resolvers/Query/People.elm)
+- [x] `INSERT` statements
+  - Example of `insertOne` with the [`createPerson` mutation](./src/Resolvers/Mutation/CreatePerson.elm)

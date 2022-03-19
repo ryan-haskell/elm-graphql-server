@@ -1,4 +1,4 @@
-module Resolvers.Query.Hello exposing (Arguments, argumentDecoder, resolver)
+module Resolvers.Query.Hello exposing (argumentDecoder, resolver)
 
 import GraphQL.Response exposing (Response)
 import Json.Decode

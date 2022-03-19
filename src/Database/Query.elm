@@ -1,5 +1,6 @@
-module Database.Query exposing (Query, findAll, findOne, toDecoder, toSql)
+module Database.Query exposing (Query, findAll, findOne, insertOne, toDecoder, toSql)
 
+import Database.Insert
 import Database.Select
 import Database.Where
 import Json.Decode
@@ -11,6 +12,12 @@ type Query column value
         , where_ : Maybe (Database.Where.Clause column)
         , select : Database.Select.Decoder column value
         , limit : Maybe Int
+        }
+    | Insert
+        { tableName : String
+        , toColumnName : column -> String
+        , values : List (Database.Insert.Value column)
+        , returning : Database.Select.Decoder column value
         }
 
 
@@ -45,6 +52,17 @@ findAll options =
         }
 
 
+insertOne :
+    { tableName : String
+    , toColumnName : column -> String
+    , values : List (Database.Insert.Value column)
+    , returning : Database.Select.Decoder column value
+    }
+    -> Query column value
+insertOne options =
+    Insert { options | returning = Database.Select.mapDecoder (Json.Decode.index 0) options.returning }
+
+
 toSql : Query column value -> String
 toSql query =
     case query of
@@ -73,9 +91,18 @@ toSql query =
                 |> String.replace "{{tableName}}" options.tableName
                 |> String.replace "{{columns}}" (Database.Select.toSql options.select)
 
+        Insert options ->
+            "INSERT INTO {{tableName}} {{data}} RETURNING {{columns}}"
+                |> String.replace "{{tableName}}" options.tableName
+                |> String.replace "{{data}}" (Database.Insert.toSql options.toColumnName options.values)
+                |> String.replace "{{columns}}" (Database.Select.toSql options.returning)
+
 
 toDecoder : Query column value -> Json.Decode.Decoder value
 toDecoder query =
     case query of
         Find options ->
             Database.Select.toJsonDecoder options.select
+
+        Insert options ->
+            Database.Select.toJsonDecoder options.returning

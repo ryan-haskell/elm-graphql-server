@@ -1,18 +1,19 @@
 module Table.People exposing
-    ( Column
-    , findOne, findAll
+    ( findOne, findAll
+    , insertOne
     )
 
 {-|
 
-@docs Column
 @docs findOne, findAll
+@docs insertOne
 
 -}
 
 import Database.Query
 import Database.Where
 import Table.People.Column
+import Table.People.Insert
 import Table.People.Select
 
 
@@ -45,6 +46,20 @@ findAll options =
         , where_ = options.where_
         , select = options.select
         , limit = options.limit
+        }
+
+
+insertOne :
+    { values : List Table.People.Insert.Value
+    , returning : Table.People.Select.Decoder value
+    }
+    -> Database.Query.Query Table.People.Column.Column value
+insertOne options =
+    Database.Query.insertOne
+        { tableName = tableName
+        , toColumnName = Table.People.Column.toString
+        , values = options.values
+        , returning = options.returning
         }
 
 

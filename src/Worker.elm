@@ -7,6 +7,7 @@ import Json.Encode
 import Json.Encode.Extra
 import Platform
 import Random
+import Resolvers.Mutation.CreatePerson
 import Resolvers.Person.Email
 import Resolvers.Person.Id
 import Resolvers.Person.Name
@@ -14,6 +15,7 @@ import Resolvers.Query.Goodbye
 import Resolvers.Query.Hello
 import Resolvers.Query.People
 import Resolvers.Query.Person
+import Schema.Person
 
 
 port success : Json.Decode.Value -> Cmd msg
@@ -82,7 +84,7 @@ init flags =
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Query.Person.argumentsDecoder
                 , resolver = Resolvers.Query.Person.resolver
-                , toJson = Json.Encode.Extra.maybe Resolvers.Query.Person.encode
+                , toJson = Json.Encode.Extra.maybe Schema.Person.encode
                 }
 
         Ok ( "Query", "people" ) ->
@@ -91,13 +93,22 @@ init flags =
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Query.People.resolver
-                , toJson = Json.Encode.list Resolvers.Query.Person.encode
+                , toJson = Json.Encode.list Schema.Person.encode
+                }
+
+        Ok ( "Mutation", "createPerson" ) ->
+            createResolver
+                { flags = flags
+                , parentDecoder = Json.Decode.succeed ()
+                , argsDecoder = Resolvers.Mutation.CreatePerson.argumentsDecoder
+                , resolver = Resolvers.Mutation.CreatePerson.resolver
+                , toJson = Schema.Person.encode
                 }
 
         Ok ( "Person", "id" ) ->
             createResolver
                 { flags = flags
-                , parentDecoder = Resolvers.Query.Person.decoder
+                , parentDecoder = Schema.Person.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Person.Id.resolver
                 , toJson = Json.Encode.int
@@ -106,7 +117,7 @@ init flags =
         Ok ( "Person", "name" ) ->
             createResolver
                 { flags = flags
-                , parentDecoder = Resolvers.Query.Person.decoder
+                , parentDecoder = Schema.Person.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Person.Name.resolver
                 , toJson = Json.Encode.string
@@ -115,7 +126,7 @@ init flags =
         Ok ( "Person", "email" ) ->
             createResolver
                 { flags = flags
-                , parentDecoder = Resolvers.Query.Person.decoder
+                , parentDecoder = Schema.Person.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Person.Email.resolver
                 , toJson = Maybe.map Json.Encode.string >> Maybe.withDefault Json.Encode.null

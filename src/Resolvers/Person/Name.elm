@@ -1,7 +1,7 @@
 module Resolvers.Person.Name exposing (resolver)
 
 import GraphQL.Response exposing (Response)
-import Resolvers.Query.Person exposing (Person)
+import Schema.Person exposing (Person)
 
 
 resolver : Person -> () -> Response String
