@@ -1,7 +1,7 @@
 type Query {
   hello(name: String): String!
   goodbye: String!
-  person(id: Int): Person
+  person(id: Int!): Person
 }
 
 type Person {
