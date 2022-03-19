@@ -4,6 +4,7 @@ import Dict exposing (Dict)
 import GraphQL.Response exposing (Response)
 import Json.Decode
 import Json.Encode
+import Json.Encode.Extra
 import Platform
 import Random
 import Resolvers.Person.Email
@@ -80,7 +81,7 @@ init flags =
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Query.Person.argumentsDecoder
                 , resolver = Resolvers.Query.Person.resolver
-                , toJson = Resolvers.Query.Person.encode
+                , toJson = Json.Encode.Extra.maybe Resolvers.Query.Person.encode
                 }
 
         Ok ( "Person", "id" ) ->

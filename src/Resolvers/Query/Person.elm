@@ -24,43 +24,32 @@ decoder =
         (Json.Decode.maybe (Json.Decode.field "email" Json.Decode.string))
 
 
-encode : Maybe Person -> Json.Decode.Value
-encode maybePerson =
-    case maybePerson of
-        Just person ->
-            Json.Encode.object
-                (List.filterMap identity
-                    [ Just ( "id", Json.Encode.int person.id )
-                    , Just ( "name", Json.Encode.string person.name )
-                    , person.email |> Maybe.map (\email -> ( "email", Json.Encode.string email ))
-                    ]
-                )
-
-        Nothing ->
-            Json.Encode.null
+encode : Person -> Json.Decode.Value
+encode person =
+    Json.Encode.object
+        (List.filterMap identity
+            [ Just ( "id", Json.Encode.int person.id )
+            , Just ( "name", Json.Encode.string person.name )
+            , person.email |> Maybe.map (\email -> ( "email", Json.Encode.string email ))
+            ]
+        )
 
 
 type alias Arguments =
-    { id : Maybe Int
+    { id : Int
     }
 
 
 argumentsDecoder : Json.Decode.Decoder Arguments
 argumentsDecoder =
     Json.Decode.map Arguments
-        (Json.Decode.maybe (Json.Decode.field "id" Json.Decode.int))
+        (Json.Decode.field "id" Json.Decode.int)
 
 
 resolver : () -> Arguments -> Response (Maybe Person)
 resolver parent args =
     Table.People.findOne
-        { where_ =
-            case args.id of
-                Just id ->
-                    Just (Table.People.Where.Id.equals id)
-
-                Nothing ->
-                    Nothing
+        { where_ = Just (Table.People.Where.Id.equals args.id)
         , select =
             Table.People.Select.new Person
                 |> Table.People.Select.id

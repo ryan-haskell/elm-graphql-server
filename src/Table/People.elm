@@ -1,12 +1,12 @@
 module Table.People exposing
     ( Column
-    , findOne
+    , findOne, findAll
     )
 
 {-|
 
 @docs Column
-@docs id, name, email
+@docs findOne, findAll
 
 -}
 
@@ -30,6 +30,21 @@ findOne options =
         { tableName = tableName
         , where_ = options.where_
         , select = options.select
+        }
+
+
+findAll :
+    { where_ : Maybe (Database.Where.Clause Column)
+    , select : Table.People.Select.Decoder value
+    , limit : Maybe Int
+    }
+    -> Database.Query.Query Column (List value)
+findAll options =
+    Database.Query.findAll
+        { tableName = tableName
+        , where_ = options.where_
+        , select = options.select
+        , limit = options.limit
         }
 
 
