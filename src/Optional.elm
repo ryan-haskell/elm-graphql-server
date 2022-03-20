@@ -1,4 +1,4 @@
-module Database.Optional exposing (Optional(..), decoder, map, toList)
+module Optional exposing (Optional(..), decoder, map, toList)
 
 import Json.Decode
 
@@ -16,6 +16,11 @@ decoder fieldName inner =
         ]
 
 
+{-| Turn a list of optional stuff into a list of values, discarding any `Absent` ones.
+
+    toList [ Present 1, Absent, Present 3 ] == [ 1, 3 ]
+
+-}
 toList : List (Optional value) -> List value
 toList optionals =
     List.filterMap toMaybe optionals
