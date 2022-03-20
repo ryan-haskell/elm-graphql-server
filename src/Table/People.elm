@@ -2,6 +2,7 @@ module Table.People exposing
     ( findOne, findAll
     , insertOne
     , updateOne
+    , deleteOne
     )
 
 {-|
@@ -9,6 +10,7 @@ module Table.People exposing
 @docs findOne, findAll
 @docs insertOne
 @docs updateOne
+@docs deleteOne
 
 -}
 
