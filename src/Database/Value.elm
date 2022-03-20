@@ -7,6 +7,8 @@ module Database.Value exposing
     , toUpdateSql
     )
 
+import Database.Utils
+
 
 type Value column
     = TextValue column String
@@ -79,13 +81,13 @@ toValueString : Value column -> String
 toValueString value =
     case value of
         TextValue _ v ->
-            "\"" ++ v ++ "\""
+            Database.Utils.wrapStringValue v
 
         IntValue _ v ->
             String.fromInt v
 
         NullableTextValue _ (Just v) ->
-            "\"" ++ v ++ "\""
+            Database.Utils.wrapStringValue v
 
         NullableTextValue _ Nothing ->
             "NULL"

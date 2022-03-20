@@ -1,5 +1,7 @@
 module Database.Where exposing (Clause, equalsInt, equalsString, toSql)
 
+import Database.Utils
+
 
 type Clause column
     = EqualsInt String Int
@@ -23,4 +25,4 @@ toSql clause =
             left ++ " = " ++ String.fromInt right
 
         EqualsString left right ->
-            left ++ " = \"" ++ right ++ "\""
+            left ++ " = " ++ Database.Utils.wrapStringValue right
