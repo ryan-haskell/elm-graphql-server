@@ -1,20 +1,22 @@
 module Table.People exposing
     ( findOne, findAll
     , insertOne
+    , updateOne
     )
 
 {-|
 
 @docs findOne, findAll
 @docs insertOne
+@docs updateOne
 
 -}
 
 import Database.Query
 import Database.Where
 import Table.People.Column
-import Table.People.Insert
 import Table.People.Select
+import Table.People.Value
 
 
 type alias Column =
@@ -50,7 +52,7 @@ findAll options =
 
 
 insertOne :
-    { values : List Table.People.Insert.Value
+    { values : List Table.People.Value.Value
     , returning : Table.People.Select.Decoder value
     }
     -> Database.Query.Query Table.People.Column.Column value
@@ -59,6 +61,22 @@ insertOne options =
         { tableName = tableName
         , toColumnName = Table.People.Column.toString
         , values = options.values
+        , returning = options.returning
+        }
+
+
+updateOne :
+    { set : List Table.People.Value.Value
+    , where_ : Maybe (Database.Where.Clause Table.People.Column.Column)
+    , returning : Table.People.Select.Decoder value
+    }
+    -> Database.Query.Query Table.People.Column.Column (Maybe value)
+updateOne options =
+    Database.Query.updateOne
+        { tableName = tableName
+        , toColumnName = Table.People.Column.toString
+        , set = options.set
+        , where_ = options.where_
         , returning = options.returning
         }
 

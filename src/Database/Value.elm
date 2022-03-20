@@ -1,9 +1,10 @@
-module Database.Insert exposing
+module Database.Value exposing
     ( Value
     , int
     , nullableText
     , text
-    , toSql
+    , toInsertSql
+    , toUpdateSql
     )
 
 
@@ -28,8 +29,8 @@ nullableText =
     NullableTextValue
 
 
-toSql : (column -> String) -> List (Value column) -> String
-toSql toColumnName values =
+toInsertSql : (column -> String) -> List (Value column) -> String
+toInsertSql toColumnName values =
     let
         columns : String
         columns =
@@ -47,6 +48,18 @@ toSql toColumnName values =
     "({{columns}}) VALUES ({{values}})"
         |> String.replace "{{columns}}" columns
         |> String.replace "{{values}}" values_
+
+
+toUpdateSql : (column -> String) -> List (Value column) -> String
+toUpdateSql toColumnName values =
+    let
+        toEquation : Value column -> String
+        toEquation value =
+            (toColumn >> toColumnName) value ++ " = " ++ toValueString value
+    in
+    values
+        |> List.map toEquation
+        |> String.join ", "
 
 
 toColumn : Value column -> column

@@ -4,8 +4,8 @@ import GraphQL.Response
 import Json.Decode
 import Schema.Person exposing (Person)
 import Table.People
-import Table.People.Insert
 import Table.People.Select
+import Table.People.Value
 
 
 type alias Arguments =
@@ -25,8 +25,8 @@ resolver : () -> Arguments -> GraphQL.Response.Response Person
 resolver _ args =
     Table.People.insertOne
         { values =
-            [ Table.People.Insert.name args.name
-            , Table.People.Insert.email args.email
+            [ Table.People.Value.name args.name
+            , Table.People.Value.email args.email
             ]
         , returning =
             Table.People.Select.new Person

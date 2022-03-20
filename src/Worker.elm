@@ -8,6 +8,7 @@ import Json.Encode.Extra
 import Platform
 import Random
 import Resolvers.Mutation.CreatePerson
+import Resolvers.Mutation.UpdatePerson
 import Resolvers.Person.Email
 import Resolvers.Person.Id
 import Resolvers.Person.Name
@@ -103,6 +104,15 @@ init flags =
                 , argsDecoder = Resolvers.Mutation.CreatePerson.argumentsDecoder
                 , resolver = Resolvers.Mutation.CreatePerson.resolver
                 , toJson = Schema.Person.encode
+                }
+
+        Ok ( "Mutation", "updatePerson" ) ->
+            createResolver
+                { flags = flags
+                , parentDecoder = Json.Decode.succeed ()
+                , argsDecoder = Resolvers.Mutation.UpdatePerson.argumentsDecoder
+                , resolver = Resolvers.Mutation.UpdatePerson.resolver
+                , toJson = Json.Encode.Extra.maybe Schema.Person.encode
                 }
 
         Ok ( "Person", "id" ) ->
