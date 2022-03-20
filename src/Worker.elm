@@ -8,6 +8,7 @@ import Json.Encode.Extra
 import Platform
 import Random
 import Resolvers.Mutation.CreatePerson
+import Resolvers.Mutation.DeletePerson
 import Resolvers.Mutation.UpdatePerson
 import Resolvers.Person.Email
 import Resolvers.Person.Id
@@ -112,6 +113,15 @@ init flags =
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.UpdatePerson.argumentsDecoder
                 , resolver = Resolvers.Mutation.UpdatePerson.resolver
+                , toJson = Json.Encode.Extra.maybe Schema.Person.encode
+                }
+
+        Ok ( "Mutation", "deletePerson" ) ->
+            createResolver
+                { flags = flags
+                , parentDecoder = Json.Decode.succeed ()
+                , argsDecoder = Resolvers.Mutation.DeletePerson.argumentsDecoder
+                , resolver = Resolvers.Mutation.DeletePerson.resolver
                 , toJson = Json.Encode.Extra.maybe Schema.Person.encode
                 }
 
