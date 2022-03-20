@@ -40,3 +40,5 @@ I've been exploring communicating to a `sqlite` database. This project supports 
   - Example of `insertOne` with the [`createPerson` mutation](./src/Resolvers/Mutation/CreatePerson.elm)
 - [x] `UPDATE` statements
   - Example of `updateOne` with the [`updatePerson` mutation](./src/Resolvers/Mutation/UpdatePerson.elm)
+- [x] `DELETE` statements
+  - Example of `deleteOne` with the [`deletePerson` mutation](./src/Resolvers/Mutation/DeletePerson.elm)
