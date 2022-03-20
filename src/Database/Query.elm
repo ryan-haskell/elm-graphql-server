@@ -1,4 +1,4 @@
-module Database.Query exposing (Query, findAll, findOne, insertOne, toDecoder, toSql, updateOne)
+module Database.Query exposing (Query, deleteOne, findAll, findOne, insertOne, toDecoder, toSql, updateOne)
 
 import Database.Select
 import Database.Value
@@ -7,7 +7,7 @@ import Json.Decode
 
 
 type Query column value
-    = Find
+    = Select
         { tableName : String
         , where_ : Maybe (Database.Where.Clause column)
         , select : Database.Select.Decoder column value
@@ -26,6 +26,12 @@ type Query column value
         , where_ : Maybe (Database.Where.Clause column)
         , returning : Database.Select.Decoder column value
         }
+    | Delete
+        { tableName : String
+        , toColumnName : column -> String
+        , where_ : Maybe (Database.Where.Clause column)
+        , returning : Database.Select.Decoder column value
+        }
 
 
 findOne :
@@ -35,10 +41,10 @@ findOne :
     }
     -> Query column (Maybe value)
 findOne options =
-    Find
+    Select
         { tableName = options.tableName
         , where_ = options.where_
-        , select = Database.Select.mapDecoder (Json.Decode.index 0 << Json.Decode.maybe) options.select
+        , select = Database.Select.mapDecoder grabFirstMaybeItemInList options.select
         , limit = Just 1
         }
 
@@ -51,7 +57,7 @@ findAll :
     }
     -> Query column (List value)
 findAll options =
-    Find
+    Select
         { tableName = options.tableName
         , where_ = options.where_
         , select = Database.Select.mapDecoder Json.Decode.list options.select
@@ -67,7 +73,7 @@ insertOne :
     }
     -> Query column value
 insertOne options =
-    Insert { options | returning = Database.Select.mapDecoder (Json.Decode.index 0) options.returning }
+    Insert { options | returning = Database.Select.mapDecoder grabFirstItemInList options.returning }
 
 
 updateOne :
@@ -84,14 +90,30 @@ updateOne options =
         , toColumnName = options.toColumnName
         , set = options.set
         , where_ = options.where_
-        , returning = Database.Select.mapDecoder (Json.Decode.index 0 << Json.Decode.maybe) options.returning
+        , returning = Database.Select.mapDecoder grabFirstMaybeItemInList options.returning
+        }
+
+
+deleteOne :
+    { tableName : String
+    , toColumnName : column -> String
+    , where_ : Maybe (Database.Where.Clause column)
+    , returning : Database.Select.Decoder column value
+    }
+    -> Query column (Maybe value)
+deleteOne options =
+    Delete
+        { tableName = options.tableName
+        , toColumnName = options.toColumnName
+        , where_ = options.where_
+        , returning = Database.Select.mapDecoder grabFirstMaybeItemInList options.returning
         }
 
 
 toSql : Query column value -> String
 toSql query =
     case query of
-        Find options ->
+        Select options ->
             let
                 template : String
                 template =
@@ -137,11 +159,24 @@ toSql query =
                         |> String.replace "{{where}}" (Database.Where.toSql where_)
                         |> String.replace "{{returning}}" (Database.Select.toSql options.returning)
 
+        Delete options ->
+            case options.where_ of
+                Nothing ->
+                    "DELETE FROM {{tableName}} RETURNING {{returning}}"
+                        |> String.replace "{{tableName}}" options.tableName
+                        |> String.replace "{{returning}}" (Database.Select.toSql options.returning)
+
+                Just where_ ->
+                    "DELETE FROM {{tableName}} WHERE {{where}} RETURNING {{returning}}"
+                        |> String.replace "{{tableName}}" options.tableName
+                        |> String.replace "{{where}}" (Database.Where.toSql where_)
+                        |> String.replace "{{returning}}" (Database.Select.toSql options.returning)
+
 
 toDecoder : Query column value -> Json.Decode.Decoder value
 toDecoder query =
     case query of
-        Find options ->
+        Select options ->
             Database.Select.toJsonDecoder options.select
 
         Insert options ->
@@ -149,3 +184,20 @@ toDecoder query =
 
         Update options ->
             Database.Select.toJsonDecoder options.returning
+
+        Delete options ->
+            Database.Select.toJsonDecoder options.returning
+
+
+
+-- INTERNALS
+
+
+grabFirstItemInList : Json.Decode.Decoder a -> Json.Decode.Decoder a
+grabFirstItemInList decoder =
+    Json.Decode.index 0 decoder
+
+
+grabFirstMaybeItemInList : Json.Decode.Decoder a -> Json.Decode.Decoder (Maybe a)
+grabFirstMaybeItemInList decoder =
+    Json.Decode.index 0 (Json.Decode.maybe decoder)

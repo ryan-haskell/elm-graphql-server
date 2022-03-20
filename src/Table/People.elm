@@ -81,6 +81,20 @@ updateOne options =
         }
 
 
+deleteOne :
+    { where_ : Maybe (Database.Where.Clause Table.People.Column.Column)
+    , returning : Table.People.Select.Decoder value
+    }
+    -> Database.Query.Query Table.People.Column.Column (Maybe value)
+deleteOne options =
+    Database.Query.deleteOne
+        { tableName = tableName
+        , toColumnName = Table.People.Column.toString
+        , where_ = options.where_
+        , returning = options.returning
+        }
+
+
 tableName : String
 tableName =
     "people"
