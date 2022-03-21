@@ -139,25 +139,40 @@ toSql query =
                 |> String.replace "{{select}}" (Database.Select.toSql options.select)
 
         Insert options ->
-            "INSERT INTO {{tableName}} {{data}} RETURNING {{returning}}"
-                |> String.replace "{{tableName}}" options.tableName
-                |> String.replace "{{data}}" (Database.Value.toInsertSql options.toColumnName options.values)
-                |> String.replace "{{returning}}" (Database.Select.toSql options.returning)
+            if List.isEmpty options.values then
+                "SELECT NULL"
+
+            else
+                "INSERT INTO {{tableName}} {{data}} RETURNING {{returning}}"
+                    |> String.replace "{{tableName}}" options.tableName
+                    |> String.replace "{{data}}" (Database.Value.toInsertSql options.toColumnName options.values)
+                    |> String.replace "{{returning}}" (Database.Select.toSql options.returning)
 
         Update options ->
             case options.where_ of
                 Nothing ->
-                    "UPDATE {{tableName}} SET {{set}} RETURNING {{returning}}"
-                        |> String.replace "{{tableName}}" options.tableName
-                        |> String.replace "{{set}}" (Database.Value.toUpdateSql options.toColumnName options.set)
-                        |> String.replace "{{returning}}" (Database.Select.toSql options.returning)
+                    if List.isEmpty options.set then
+                        "SELECT NULL"
+
+                    else
+                        "UPDATE {{tableName}} SET {{set}} RETURNING {{returning}}"
+                            |> String.replace "{{tableName}}" options.tableName
+                            |> String.replace "{{set}}" (Database.Value.toUpdateSql options.toColumnName options.set)
+                            |> String.replace "{{returning}}" (Database.Select.toSql options.returning)
 
                 Just where_ ->
-                    "UPDATE {{tableName}} SET {{set}} WHERE {{where}} RETURNING {{returning}}"
-                        |> String.replace "{{tableName}}" options.tableName
-                        |> String.replace "{{set}}" (Database.Value.toUpdateSql options.toColumnName options.set)
-                        |> String.replace "{{where}}" (Database.Where.toSql where_)
-                        |> String.replace "{{returning}}" (Database.Select.toSql options.returning)
+                    if List.isEmpty options.set then
+                        "SELECT {{returning}} FROM {{tableName}} WHERE {{where}}"
+                            |> String.replace "{{tableName}}" options.tableName
+                            |> String.replace "{{where}}" (Database.Where.toSql where_)
+                            |> String.replace "{{returning}}" (Database.Select.toSql options.returning)
+
+                    else
+                        "UPDATE {{tableName}} SET {{set}} WHERE {{where}} RETURNING {{returning}}"
+                            |> String.replace "{{tableName}}" options.tableName
+                            |> String.replace "{{set}}" (Database.Value.toUpdateSql options.toColumnName options.set)
+                            |> String.replace "{{where}}" (Database.Where.toSql where_)
+                            |> String.replace "{{returning}}" (Database.Select.toSql options.returning)
 
         Delete options ->
             case options.where_ of
@@ -200,4 +215,4 @@ grabFirstItemInList decoder =
 
 grabFirstMaybeItemInList : Json.Decode.Decoder a -> Json.Decode.Decoder (Maybe a)
 grabFirstMaybeItemInList decoder =
-    Json.Decode.index 0 (Json.Decode.maybe decoder)
+    Json.Decode.maybe (Json.Decode.index 0 decoder)

@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "npm install && npm run elm:build && npm run dev",
-    "dev": "concurrently -n 🚀,🌳 'npm:server:dev' 'npm:elm:dev'",
+    "dev": "concurrently -n 💁‍♀️,🌳 'npm:server:dev' 'npm:elm:dev'",
     "server:dev": "nodemon -w src -w dist -e js,gql src/index.js",
     "elm:build": "elm make src/Worker.elm --output=dist/elm.worker.js",
     "elm:dev": "chokidar src --initial true -c 'npm run elm:build'"
