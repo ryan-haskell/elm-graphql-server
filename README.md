@@ -35,7 +35,7 @@ I've been exploring communicating to a `sqlite` database. This project supports 
 
 - [x] `SELECT` statements
   - Example of `findOne` with the [`user` query](./src/Resolvers/Query/User.elm)
-  - Example of `findAll` with the [`people` query](./src/Resolvers/Query/People.elm)
+  - Example of `findAll` with the [`users` query](./src/Resolvers/Query/Users.elm)
 - [x] `INSERT` statements
   - Example of `insertOne` with the [`createUser` mutation](./src/Resolvers/Mutation/CreateUser.elm)
 - [x] `UPDATE` statements
