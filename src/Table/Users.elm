@@ -1,4 +1,4 @@
-module Table.People exposing
+module Table.Users exposing
     ( findOne, findAll
     , insertOne
     , updateOne
@@ -16,18 +16,23 @@ module Table.People exposing
 
 import Database.Query
 import Database.Where
-import Table.People.Column
-import Table.People.Select
-import Table.People.Value
+import Table.Users.Column
+import Table.Users.Select
+import Table.Users.Value
 
 
 type alias Column =
-    Table.People.Column.Column
+    Table.Users.Column.Column
+
+
+tableName : String
+tableName =
+    "users"
 
 
 findOne :
     { where_ : Maybe (Database.Where.Clause Column)
-    , select : Table.People.Select.Decoder value
+    , select : Table.Users.Select.Decoder value
     }
     -> Database.Query.Query Column (Maybe value)
 findOne options =
@@ -40,7 +45,7 @@ findOne options =
 
 findAll :
     { where_ : Maybe (Database.Where.Clause Column)
-    , select : Table.People.Select.Decoder value
+    , select : Table.Users.Select.Decoder value
     , limit : Maybe Int
     }
     -> Database.Query.Query Column (List value)
@@ -54,29 +59,29 @@ findAll options =
 
 
 insertOne :
-    { values : List Table.People.Value.Value
-    , returning : Table.People.Select.Decoder value
+    { values : List Table.Users.Value.Value
+    , returning : Table.Users.Select.Decoder value
     }
-    -> Database.Query.Query Table.People.Column.Column value
+    -> Database.Query.Query Table.Users.Column.Column value
 insertOne options =
     Database.Query.insertOne
         { tableName = tableName
-        , toColumnName = Table.People.Column.toString
+        , toColumnName = Table.Users.Column.toString
         , values = options.values
         , returning = options.returning
         }
 
 
 updateOne :
-    { set : List Table.People.Value.Value
-    , where_ : Maybe (Database.Where.Clause Table.People.Column.Column)
-    , returning : Table.People.Select.Decoder value
+    { set : List Table.Users.Value.Value
+    , where_ : Maybe (Database.Where.Clause Table.Users.Column.Column)
+    , returning : Table.Users.Select.Decoder value
     }
-    -> Database.Query.Query Table.People.Column.Column (Maybe value)
+    -> Database.Query.Query Table.Users.Column.Column (Maybe value)
 updateOne options =
     Database.Query.updateOne
         { tableName = tableName
-        , toColumnName = Table.People.Column.toString
+        , toColumnName = Table.Users.Column.toString
         , set = options.set
         , where_ = options.where_
         , returning = options.returning
@@ -84,19 +89,14 @@ updateOne options =
 
 
 deleteOne :
-    { where_ : Maybe (Database.Where.Clause Table.People.Column.Column)
-    , returning : Table.People.Select.Decoder value
+    { where_ : Maybe (Database.Where.Clause Table.Users.Column.Column)
+    , returning : Table.Users.Select.Decoder value
     }
-    -> Database.Query.Query Table.People.Column.Column (Maybe value)
+    -> Database.Query.Query Table.Users.Column.Column (Maybe value)
 deleteOne options =
     Database.Query.deleteOne
         { tableName = tableName
-        , toColumnName = Table.People.Column.toString
+        , toColumnName = Table.Users.Column.toString
         , where_ = options.where_
         , returning = options.returning
         }
-
-
-tableName : String
-tableName =
-    "people"

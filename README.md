@@ -34,11 +34,11 @@ A real implementation would require a nice way to talk to a database, a third-pa
 I've been exploring communicating to a `sqlite` database. This project supports basic forms of:
 
 - [x] `SELECT` statements
-  - Example of `findOne` with the [`person` query](./src/Resolvers/Query/Person.elm)
+  - Example of `findOne` with the [`user` query](./src/Resolvers/Query/User.elm)
   - Example of `findAll` with the [`people` query](./src/Resolvers/Query/People.elm)
 - [x] `INSERT` statements
-  - Example of `insertOne` with the [`createPerson` mutation](./src/Resolvers/Mutation/CreatePerson.elm)
+  - Example of `insertOne` with the [`createUser` mutation](./src/Resolvers/Mutation/CreateUser.elm)
 - [x] `UPDATE` statements
-  - Example of `updateOne` with the [`updatePerson` mutation](./src/Resolvers/Mutation/UpdatePerson.elm)
+  - Example of `updateOne` with the [`updateUser` mutation](./src/Resolvers/Mutation/UpdateUser.elm)
 - [x] `DELETE` statements
-  - Example of `deleteOne` with the [`deletePerson` mutation](./src/Resolvers/Mutation/DeletePerson.elm)
+  - Example of `deleteOne` with the [`deleteUser` mutation](./src/Resolvers/Mutation/DeleteUser.elm)

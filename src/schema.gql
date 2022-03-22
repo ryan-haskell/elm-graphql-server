@@ -1,18 +1,28 @@
 type Query {
   hello(name: String): String!
-  goodbye: String!
-  person(id: Int!): Person
-  people: [Person!]!
+  user(id: Int!): User
+  users: [User!]!
 }
 
 type Mutation {
-  createPerson(name: String!, email: String): Person!
-  updatePerson(id: Int!, name: String, email: String): Person
-  deletePerson(id: Int!): Person
+  createUser(username: String!, avatarUrl: String): User!
+  updateUser(id: Int!, username: String, avatarUrl: String): User
+  deleteUser(id: Int!): User
+
+  # createPost(authorId: Int!, imageUrls: [String!]!, caption: String!): Post!
 }
 
-type Person {
+type User {
   id: Int!
-  name: String!
-  email: String
+  username: String!
+  avatarUrl: String
+  # posts: [Post!]!
 }
+
+# type Post {
+#   id: Int!
+#   imageUrls: [String!]!
+#   caption: String!
+#   createdAt: Int!
+#   author: User
+# }

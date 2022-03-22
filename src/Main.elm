@@ -1,4 +1,4 @@
-port module Worker exposing (main)
+port module Main exposing (main)
 
 import Dict exposing (Dict)
 import GraphQL.Response exposing (Response)
@@ -7,17 +7,16 @@ import Json.Encode
 import Json.Encode.Extra
 import Platform
 import Random
-import Resolvers.Mutation.CreatePerson
-import Resolvers.Mutation.DeletePerson
-import Resolvers.Mutation.UpdatePerson
-import Resolvers.Person.Email
-import Resolvers.Person.Id
-import Resolvers.Person.Name
-import Resolvers.Query.Goodbye
+import Resolvers.Mutation.CreateUser
+import Resolvers.Mutation.DeleteUser
+import Resolvers.Mutation.UpdateUser
 import Resolvers.Query.Hello
-import Resolvers.Query.People
-import Resolvers.Query.Person
-import Schema.Person
+import Resolvers.Query.User
+import Resolvers.Query.Users
+import Resolvers.User.AvatarUrl
+import Resolvers.User.Id
+import Resolvers.User.Username
+import Schema.User
 
 
 port success : Json.Decode.Value -> Cmd msg
@@ -71,84 +70,75 @@ init flags =
                 , toJson = Json.Encode.string
                 }
 
-        Ok ( "Query", "goodbye" ) ->
+        Ok ( "Query", "user" ) ->
+            createResolver
+                { flags = flags
+                , parentDecoder = Json.Decode.succeed ()
+                , argsDecoder = Resolvers.Query.User.argumentsDecoder
+                , resolver = Resolvers.Query.User.resolver
+                , toJson = Json.Encode.Extra.maybe Schema.User.encode
+                }
+
+        Ok ( "Query", "users" ) ->
             createResolver
                 { flags = flags
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Json.Decode.succeed ()
-                , resolver = Resolvers.Query.Goodbye.resolver
-                , toJson = Json.Encode.string
+                , resolver = Resolvers.Query.Users.resolver
+                , toJson = Json.Encode.list Schema.User.encode
                 }
 
-        Ok ( "Query", "person" ) ->
+        Ok ( "Mutation", "createUser" ) ->
             createResolver
                 { flags = flags
                 , parentDecoder = Json.Decode.succeed ()
-                , argsDecoder = Resolvers.Query.Person.argumentsDecoder
-                , resolver = Resolvers.Query.Person.resolver
-                , toJson = Json.Encode.Extra.maybe Schema.Person.encode
+                , argsDecoder = Resolvers.Mutation.CreateUser.argumentsDecoder
+                , resolver = Resolvers.Mutation.CreateUser.resolver
+                , toJson = Schema.User.encode
                 }
 
-        Ok ( "Query", "people" ) ->
+        Ok ( "Mutation", "updateUser" ) ->
             createResolver
                 { flags = flags
                 , parentDecoder = Json.Decode.succeed ()
+                , argsDecoder = Resolvers.Mutation.UpdateUser.argumentsDecoder
+                , resolver = Resolvers.Mutation.UpdateUser.resolver
+                , toJson = Json.Encode.Extra.maybe Schema.User.encode
+                }
+
+        Ok ( "Mutation", "deleteUser" ) ->
+            createResolver
+                { flags = flags
+                , parentDecoder = Json.Decode.succeed ()
+                , argsDecoder = Resolvers.Mutation.DeleteUser.argumentsDecoder
+                , resolver = Resolvers.Mutation.DeleteUser.resolver
+                , toJson = Json.Encode.Extra.maybe Schema.User.encode
+                }
+
+        Ok ( "User", "id" ) ->
+            createResolver
+                { flags = flags
+                , parentDecoder = Schema.User.decoder
                 , argsDecoder = Json.Decode.succeed ()
-                , resolver = Resolvers.Query.People.resolver
-                , toJson = Json.Encode.list Schema.Person.encode
-                }
-
-        Ok ( "Mutation", "createPerson" ) ->
-            createResolver
-                { flags = flags
-                , parentDecoder = Json.Decode.succeed ()
-                , argsDecoder = Resolvers.Mutation.CreatePerson.argumentsDecoder
-                , resolver = Resolvers.Mutation.CreatePerson.resolver
-                , toJson = Schema.Person.encode
-                }
-
-        Ok ( "Mutation", "updatePerson" ) ->
-            createResolver
-                { flags = flags
-                , parentDecoder = Json.Decode.succeed ()
-                , argsDecoder = Resolvers.Mutation.UpdatePerson.argumentsDecoder
-                , resolver = Resolvers.Mutation.UpdatePerson.resolver
-                , toJson = Json.Encode.Extra.maybe Schema.Person.encode
-                }
-
-        Ok ( "Mutation", "deletePerson" ) ->
-            createResolver
-                { flags = flags
-                , parentDecoder = Json.Decode.succeed ()
-                , argsDecoder = Resolvers.Mutation.DeletePerson.argumentsDecoder
-                , resolver = Resolvers.Mutation.DeletePerson.resolver
-                , toJson = Json.Encode.Extra.maybe Schema.Person.encode
-                }
-
-        Ok ( "Person", "id" ) ->
-            createResolver
-                { flags = flags
-                , parentDecoder = Schema.Person.decoder
-                , argsDecoder = Json.Decode.succeed ()
-                , resolver = Resolvers.Person.Id.resolver
+                , resolver = Resolvers.User.Id.resolver
                 , toJson = Json.Encode.int
                 }
 
-        Ok ( "Person", "name" ) ->
+        Ok ( "User", "username" ) ->
             createResolver
                 { flags = flags
-                , parentDecoder = Schema.Person.decoder
+                , parentDecoder = Schema.User.decoder
                 , argsDecoder = Json.Decode.succeed ()
-                , resolver = Resolvers.Person.Name.resolver
+                , resolver = Resolvers.User.Username.resolver
                 , toJson = Json.Encode.string
                 }
 
-        Ok ( "Person", "email" ) ->
+        Ok ( "User", "avatarUrl" ) ->
             createResolver
                 { flags = flags
-                , parentDecoder = Schema.Person.decoder
+                , parentDecoder = Schema.User.decoder
                 , argsDecoder = Json.Decode.succeed ()
-                , resolver = Resolvers.Person.Email.resolver
+                , resolver = Resolvers.User.AvatarUrl.resolver
                 , toJson = Maybe.map Json.Encode.string >> Maybe.withDefault Json.Encode.null
                 }
 
