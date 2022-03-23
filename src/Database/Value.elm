@@ -1,6 +1,7 @@
 module Database.Value exposing
     ( Value
     , int
+    , json
     , nullableText
     , text
     , toInsertSql
@@ -8,11 +9,13 @@ module Database.Value exposing
     )
 
 import Database.Utils
+import Json.Encode
 
 
 type Value column
     = TextValue column String
     | IntValue column Int
+    | JsonValue column Json.Encode.Value
     | NullableTextValue column (Maybe String)
 
 
@@ -29,6 +32,11 @@ int =
 nullableText : column -> Maybe String -> Value column
 nullableText =
     NullableTextValue
+
+
+json : column -> (value -> Json.Encode.Value) -> value -> Value column
+json column toJson value =
+    JsonValue column (toJson value)
 
 
 toInsertSql : (column -> String) -> List (Value column) -> String
@@ -76,6 +84,9 @@ toColumn value =
         NullableTextValue c _ ->
             c
 
+        JsonValue c _ ->
+            c
+
 
 toValueString : Value column -> String
 toValueString value =
@@ -91,3 +102,6 @@ toValueString value =
 
         NullableTextValue _ Nothing ->
             "NULL"
+
+        JsonValue _ v ->
+            Database.Utils.wrapStringValue (Json.Encode.encode 0 v)
