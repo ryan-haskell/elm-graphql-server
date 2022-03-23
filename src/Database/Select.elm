@@ -83,4 +83,6 @@ mapDecoder fn (Decoder select) =
 
 toColumnList : Decoder column value -> List String
 toColumnList (Decoder select) =
-    select.columns |> List.map select.toString
+    select.columns
+        |> List.map select.toString
+        |> List.reverse
