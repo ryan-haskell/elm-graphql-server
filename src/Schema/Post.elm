@@ -1,7 +1,8 @@
-module Schema.Post exposing (Post, decoder, encode)
+module Schema.Post exposing (Post, decoder, encode, selectAll)
 
 import Json.Decode
 import Json.Encode
+import Table.Posts.Select
 import Time
 
 
@@ -11,6 +12,15 @@ type alias Post =
     , caption : String
     , createdAt : Time.Posix
     }
+
+
+selectAll : Table.Posts.Select.Decoder Post
+selectAll =
+    Table.Posts.Select.new Post
+        |> Table.Posts.Select.id
+        |> Table.Posts.Select.imageUrls
+        |> Table.Posts.Select.caption
+        |> Table.Posts.Select.createdAt
 
 
 decoder : Json.Decode.Decoder Post

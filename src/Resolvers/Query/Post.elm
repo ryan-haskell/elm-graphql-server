@@ -25,11 +25,6 @@ resolver : () -> Arguments -> Response (Maybe Post)
 resolver parent args =
     Table.Posts.findOne
         { where_ = Just (Table.Posts.Where.Id.equals args.id)
-        , select =
-            Table.Posts.Select.new Post
-                |> Table.Posts.Select.id
-                |> Table.Posts.Select.imageUrls
-                |> Table.Posts.Select.caption
-                |> Table.Posts.Select.createdAt
+        , select = Schema.Post.selectAll
         }
         |> GraphQL.Response.fromDatabaseQuery

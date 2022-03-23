@@ -10,6 +10,7 @@ import Random
 import Resolvers.Mutation.CreatePost
 import Resolvers.Mutation.CreateUser
 import Resolvers.Mutation.DeleteUser
+import Resolvers.Mutation.UpdatePost
 import Resolvers.Mutation.UpdateUser
 import Resolvers.Post.Caption
 import Resolvers.Post.CreatedAt
@@ -122,6 +123,15 @@ init flags =
                 , argsDecoder = Resolvers.Mutation.CreatePost.argumentsDecoder
                 , resolver = Resolvers.Mutation.CreatePost.resolver
                 , toJson = Schema.Post.encode
+                }
+
+        Ok ( "Mutation", "updatePost" ) ->
+            createResolver
+                { flags = flags
+                , parentDecoder = Json.Decode.succeed ()
+                , argsDecoder = Resolvers.Mutation.UpdatePost.argumentsDecoder
+                , resolver = Resolvers.Mutation.UpdatePost.resolver
+                , toJson = Json.Encode.Extra.maybe Schema.Post.encode
                 }
 
         Ok ( "Mutation", "createUser" ) ->

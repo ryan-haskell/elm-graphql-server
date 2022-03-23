@@ -14,6 +14,8 @@ type Mutation {
   deleteUser(id: Int!): User
 
   createPost(imageUrls: [String!]!, caption: String!): Post!
+  updatePost(id: Int!, imageUrls: [String!], caption: String): Post
+
 }
 
 

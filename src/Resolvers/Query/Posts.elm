@@ -11,11 +11,6 @@ resolver _ args =
     Table.Posts.findAll
         { where_ = Nothing
         , limit = Just 25
-        , select =
-            Table.Posts.Select.new Post
-                |> Table.Posts.Select.id
-                |> Table.Posts.Select.imageUrls
-                |> Table.Posts.Select.caption
-                |> Table.Posts.Select.createdAt
+        , select = Schema.Post.selectAll
         }
         |> GraphQL.Response.fromDatabaseQuery

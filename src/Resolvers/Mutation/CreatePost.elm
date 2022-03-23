@@ -29,11 +29,6 @@ resolver _ args =
             [ Table.Posts.Value.imageUrls args.imageUrls
             , Table.Posts.Value.caption args.caption
             ]
-        , returning =
-            Table.Posts.Select.new Post
-                |> Table.Posts.Select.id
-                |> Table.Posts.Select.imageUrls
-                |> Table.Posts.Select.caption
-                |> Table.Posts.Select.createdAt
+        , returning = Schema.Post.selectAll
         }
         |> GraphQL.Response.fromDatabaseQuery
