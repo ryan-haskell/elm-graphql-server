@@ -9,6 +9,7 @@ import Platform
 import Random
 import Resolvers.Mutation.CreatePost
 import Resolvers.Mutation.CreateUser
+import Resolvers.Mutation.DeletePost
 import Resolvers.Mutation.DeleteUser
 import Resolvers.Mutation.UpdatePost
 import Resolvers.Mutation.UpdateUser
@@ -131,6 +132,15 @@ init flags =
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.UpdatePost.argumentsDecoder
                 , resolver = Resolvers.Mutation.UpdatePost.resolver
+                , toJson = Json.Encode.Extra.maybe Schema.Post.encode
+                }
+
+        Ok ( "Mutation", "deletePost" ) ->
+            createResolver
+                { flags = flags
+                , parentDecoder = Json.Decode.succeed ()
+                , argsDecoder = Resolvers.Mutation.DeletePost.argumentsDecoder
+                , resolver = Resolvers.Mutation.DeletePost.resolver
                 , toJson = Json.Encode.Extra.maybe Schema.Post.encode
                 }
 
