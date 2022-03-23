@@ -1,10 +1,11 @@
 type Query {
   hello(name: String): String!
+
   user(id: Int!): User
   users: [User!]!
 
-  # post(id: Int!): Post
-  # posts: [Post!]!
+  post(id: Int!): Post
+  posts: [Post!]!
 }
 
 type Mutation {

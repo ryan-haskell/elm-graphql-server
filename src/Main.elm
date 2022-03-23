@@ -16,6 +16,8 @@ import Resolvers.Post.CreatedAt
 import Resolvers.Post.Id
 import Resolvers.Post.ImageUrls
 import Resolvers.Query.Hello
+import Resolvers.Query.Post
+import Resolvers.Query.Posts
 import Resolvers.Query.User
 import Resolvers.Query.Users
 import Resolvers.User.AvatarUrl
@@ -93,6 +95,24 @@ init flags =
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Query.Users.resolver
                 , toJson = Json.Encode.list Schema.User.encode
+                }
+
+        Ok ( "Query", "post" ) ->
+            createResolver
+                { flags = flags
+                , parentDecoder = Json.Decode.succeed ()
+                , argsDecoder = Resolvers.Query.Post.argumentsDecoder
+                , resolver = Resolvers.Query.Post.resolver
+                , toJson = Json.Encode.Extra.maybe Schema.Post.encode
+                }
+
+        Ok ( "Query", "posts" ) ->
+            createResolver
+                { flags = flags
+                , parentDecoder = Json.Decode.succeed ()
+                , argsDecoder = Json.Decode.succeed ()
+                , resolver = Resolvers.Query.Posts.resolver
+                , toJson = Json.Encode.list Schema.Post.encode
                 }
 
         Ok ( "Mutation", "createPost" ) ->
