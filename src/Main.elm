@@ -7,16 +7,23 @@ import Json.Encode
 import Json.Encode.Extra
 import Platform
 import Random
+import Resolvers.Mutation.CreatePost
 import Resolvers.Mutation.CreateUser
 import Resolvers.Mutation.DeleteUser
 import Resolvers.Mutation.UpdateUser
+import Resolvers.Post.Caption
+import Resolvers.Post.CreatedAt
+import Resolvers.Post.Id
+import Resolvers.Post.ImageUrls
 import Resolvers.Query.Hello
 import Resolvers.Query.User
 import Resolvers.Query.Users
 import Resolvers.User.AvatarUrl
 import Resolvers.User.Id
 import Resolvers.User.Username
+import Schema.Post
 import Schema.User
+import Time
 
 
 port success : Json.Decode.Value -> Cmd msg
@@ -88,6 +95,15 @@ init flags =
                 , toJson = Json.Encode.list Schema.User.encode
                 }
 
+        Ok ( "Mutation", "createPost" ) ->
+            createResolver
+                { flags = flags
+                , parentDecoder = Json.Decode.succeed ()
+                , argsDecoder = Resolvers.Mutation.CreatePost.argumentsDecoder
+                , resolver = Resolvers.Mutation.CreatePost.resolver
+                , toJson = Schema.Post.encode
+                }
+
         Ok ( "Mutation", "createUser" ) ->
             createResolver
                 { flags = flags
@@ -140,6 +156,42 @@ init flags =
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.User.AvatarUrl.resolver
                 , toJson = Maybe.map Json.Encode.string >> Maybe.withDefault Json.Encode.null
+                }
+
+        Ok ( "Post", "id" ) ->
+            createResolver
+                { flags = flags
+                , parentDecoder = Schema.Post.decoder
+                , argsDecoder = Json.Decode.succeed ()
+                , resolver = Resolvers.Post.Id.resolver
+                , toJson = Json.Encode.int
+                }
+
+        Ok ( "Post", "imageUrls" ) ->
+            createResolver
+                { flags = flags
+                , parentDecoder = Schema.Post.decoder
+                , argsDecoder = Json.Decode.succeed ()
+                , resolver = Resolvers.Post.ImageUrls.resolver
+                , toJson = Json.Encode.list Json.Encode.string
+                }
+
+        Ok ( "Post", "caption" ) ->
+            createResolver
+                { flags = flags
+                , parentDecoder = Schema.Post.decoder
+                , argsDecoder = Json.Decode.succeed ()
+                , resolver = Resolvers.Post.Caption.resolver
+                , toJson = Json.Encode.string
+                }
+
+        Ok ( "Post", "createdAt" ) ->
+            createResolver
+                { flags = flags
+                , parentDecoder = Schema.Post.decoder
+                , argsDecoder = Json.Decode.succeed ()
+                , resolver = Resolvers.Post.CreatedAt.resolver
+                , toJson = Json.Encode.int << Time.posixToMillis
                 }
 
         Ok ( objectName, fieldName ) ->

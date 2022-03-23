@@ -1,13 +1,13 @@
 module Table.Posts.Column exposing
     ( Column
-    , id, imageUrls, caption
+    , id, imageUrls, caption, createdAt
     , toString
     )
 
 {-|
 
 @docs Column
-@docs id, imageUrls, caption
+@docs id, imageUrls, caption, createdAt
 
 @docs toString
 
@@ -18,6 +18,7 @@ type Column
     = Id
     | ImageUrls
     | Caption
+    | CreatedAt
 
 
 id : Column
@@ -35,6 +36,11 @@ caption =
     Caption
 
 
+createdAt : Column
+createdAt =
+    CreatedAt
+
+
 toString : Column -> String
 toString column =
     case column of
@@ -46,3 +52,6 @@ toString column =
 
         Caption ->
             "caption"
+
+        CreatedAt ->
+            "createdAt"

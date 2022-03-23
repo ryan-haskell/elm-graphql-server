@@ -3,6 +3,7 @@ module Database.Value exposing
     , int
     , json
     , nullableText
+    , posix
     , text
     , toInsertSql
     , toUpdateSql
@@ -10,6 +11,7 @@ module Database.Value exposing
 
 import Database.Utils
 import Json.Encode
+import Time
 
 
 type Value column
@@ -17,6 +19,7 @@ type Value column
     | IntValue column Int
     | JsonValue column Json.Encode.Value
     | NullableTextValue column (Maybe String)
+    | PosixValue column Time.Posix
 
 
 text : column -> String -> Value column
@@ -27,6 +30,11 @@ text =
 int : column -> Int -> Value column
 int =
     IntValue
+
+
+posix : column -> Time.Posix -> Value column
+posix =
+    PosixValue
 
 
 nullableText : column -> Maybe String -> Value column
@@ -87,6 +95,9 @@ toColumn value =
         JsonValue c _ ->
             c
 
+        PosixValue c _ ->
+            c
+
 
 toValueString : Value column -> String
 toValueString value =
@@ -96,6 +107,9 @@ toValueString value =
 
         IntValue _ v ->
             String.fromInt v
+
+        PosixValue _ v ->
+            String.fromInt (Time.posixToMillis v)
 
         NullableTextValue _ (Just v) ->
             Database.Utils.wrapStringValue v

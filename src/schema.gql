@@ -2,6 +2,9 @@ type Query {
   hello(name: String): String!
   user(id: Int!): User
   users: [User!]!
+
+  # post(id: Int!): Post
+  # posts: [Post!]!
 }
 
 type Mutation {
@@ -9,8 +12,15 @@ type Mutation {
   updateUser(id: Int!, username: String, avatarUrl: String): User
   deleteUser(id: Int!): User
 
-  # createPost(authorId: Int!, imageUrls: [String!]!, caption: String!): Post!
+  createPost(imageUrls: [String!]!, caption: String!): Post!
 }
+
+
+"""
+The number of milliseconds since the [Unix Epoch](https://en.wikipedia.org/wiki/Unix_time)
+"""
+scalar Posix
+
 
 type User {
   id: Int!
@@ -19,10 +29,10 @@ type User {
   # posts: [Post!]!
 }
 
-# type Post {
-#   id: Int!
-#   imageUrls: [String!]!
-#   caption: String!
-#   createdAt: Int!
-#   author: User
-# }
+type Post {
+  id: Int!
+  imageUrls: [String!]!
+  caption: String!
+  createdAt: Posix!
+  # author: User
+}

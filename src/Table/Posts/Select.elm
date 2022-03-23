@@ -1,12 +1,12 @@
 module Table.Posts.Select exposing
     ( Decoder, new
-    , id, imageUrls, caption
+    , id, imageUrls, caption, createdAt
     )
 
 {-|
 
 @docs Decoder, new
-@docs id, imageUrls, caption
+@docs id, imageUrls, caption, createdAt
 
 -}
 
@@ -14,6 +14,7 @@ import Database.Select
 import Database.Utils
 import Json.Decode
 import Table.Posts.Column
+import Time
 
 
 type alias Decoder value =
@@ -45,4 +46,11 @@ caption : Decoder (String -> value) -> Decoder value
 caption decoder =
     Database.Select.with Table.Posts.Column.caption
         Json.Decode.string
+        decoder
+
+
+createdAt : Decoder (Time.Posix -> value) -> Decoder value
+createdAt decoder =
+    Database.Select.with Table.Posts.Column.createdAt
+        (Json.Decode.int |> Json.Decode.map Time.millisToPosix)
         decoder
