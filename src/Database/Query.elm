@@ -36,13 +36,15 @@ type Query column value
 
 findOne :
     { tableName : String
-    , where_ : Maybe (Database.Where.Clause column)
-    , select : Database.Select.Decoder column value
     }
+    ->
+        { where_ : Maybe (Database.Where.Clause column)
+        , select : Database.Select.Decoder column value
+        }
     -> Query column (Maybe value)
-findOne options =
+findOne config options =
     Select
-        { tableName = options.tableName
+        { tableName = config.tableName
         , where_ = options.where_
         , select = Database.Select.mapDecoder grabFirstMaybeItemInList options.select
         , limit = Just 1
@@ -51,14 +53,16 @@ findOne options =
 
 findAll :
     { tableName : String
-    , select : Database.Select.Decoder column value
-    , where_ : Maybe (Database.Where.Clause column)
-    , limit : Maybe Int
     }
+    ->
+        { select : Database.Select.Decoder column value
+        , where_ : Maybe (Database.Where.Clause column)
+        , limit : Maybe Int
+        }
     -> Query column (List value)
-findAll options =
+findAll config options =
     Select
-        { tableName = options.tableName
+        { tableName = config.tableName
         , where_ = options.where_
         , select = Database.Select.mapDecoder Json.Decode.list options.select
         , limit = options.limit
@@ -68,26 +72,35 @@ findAll options =
 insertOne :
     { tableName : String
     , toColumnName : column -> String
-    , values : List (Database.Value.Value column)
-    , returning : Database.Select.Decoder column value
     }
+    ->
+        { values : List (Database.Value.Value column)
+        , returning : Database.Select.Decoder column value
+        }
     -> Query column value
-insertOne options =
-    Insert { options | returning = Database.Select.mapDecoder grabFirstItemInList options.returning }
+insertOne config options =
+    Insert
+        { tableName = config.tableName
+        , toColumnName = config.toColumnName
+        , values = options.values
+        , returning = Database.Select.mapDecoder grabFirstItemInList options.returning
+        }
 
 
 updateOne :
     { tableName : String
     , toColumnName : column -> String
-    , set : List (Database.Value.Value column)
-    , where_ : Maybe (Database.Where.Clause column)
-    , returning : Database.Select.Decoder column value
     }
+    ->
+        { set : List (Database.Value.Value column)
+        , where_ : Maybe (Database.Where.Clause column)
+        , returning : Database.Select.Decoder column value
+        }
     -> Query column (Maybe value)
-updateOne options =
+updateOne config options =
     Update
-        { tableName = options.tableName
-        , toColumnName = options.toColumnName
+        { tableName = config.tableName
+        , toColumnName = config.toColumnName
         , set = options.set
         , where_ = options.where_
         , returning = Database.Select.mapDecoder grabFirstMaybeItemInList options.returning
@@ -97,14 +110,16 @@ updateOne options =
 deleteOne :
     { tableName : String
     , toColumnName : column -> String
-    , where_ : Maybe (Database.Where.Clause column)
-    , returning : Database.Select.Decoder column value
     }
+    ->
+        { where_ : Maybe (Database.Where.Clause column)
+        , returning : Database.Select.Decoder column value
+        }
     -> Query column (Maybe value)
-deleteOne options =
+deleteOne config options =
     Delete
-        { tableName = options.tableName
-        , toColumnName = options.toColumnName
+        { tableName = config.tableName
+        , toColumnName = config.toColumnName
         , where_ = options.where_
         , returning = Database.Select.mapDecoder grabFirstMaybeItemInList options.returning
         }
