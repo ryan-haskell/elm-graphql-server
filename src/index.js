@@ -59,9 +59,10 @@ const typeDefs = fs.readFileSync(path.join(__dirname, "schema.gql"), {
 const fieldHandler = (objectName) => ({
   get (target, fieldName, receiver) {
     if (fieldName === "__isTypeOf") return () => objectName
-    return (parent, args, context) => {
+    return (parent, args, context, info) => {
+      // console.log({ currentUserId: context.currentUserId })
       let worker = Elm.Main.init({
-        flags: { objectName, fieldName, parent, args },
+        flags: { objectName, fieldName, parent, args, context },
       })
 
       return new Promise((resolve, reject) => {
@@ -94,7 +95,10 @@ const start = async () => {
   const server = new ApolloServer({
     typeDefs,
     resolvers,
-    context: { db },
+    context: ({ req }) => ({
+      currentUserId: req.header('Authorization'),
+      db
+    }),
     plugins: [ApolloServerPluginLandingPageGraphQLPlayground()],
   })
 

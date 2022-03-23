@@ -2,6 +2,7 @@ module GraphQL.Response exposing
     ( Response
     , ok, err
     , fromDatabaseQuery
+    , map, andThen
     , toCmd
     )
 
@@ -11,6 +12,7 @@ module GraphQL.Response exposing
 @docs ok, err
 @docs fromDatabaseQuery
 
+@docs map, andThen
 @docs toCmd
 
 -}
@@ -23,11 +25,43 @@ import Task exposing (Task)
 
 type Response value
     = Success value
-    | Failure Json.Decode.Value
+    | Failure String
     | Query
         { sql : String
         , onResponse : Json.Decode.Value -> Response value
         }
+
+
+map : (a -> b) -> Response a -> Response b
+map fn response =
+    case response of
+        Success value ->
+            Success (fn value)
+
+        Failure reason ->
+            Failure reason
+
+        Query data ->
+            Query
+                { sql = data.sql
+                , onResponse = \json -> map fn (data.onResponse json)
+                }
+
+
+andThen : (a -> Response b) -> Response a -> Response b
+andThen toResponse response =
+    case response of
+        Success value ->
+            toResponse value
+
+        Failure reason ->
+            Failure reason
+
+        Query data ->
+            Query
+                { sql = data.sql
+                , onResponse = \json -> andThen toResponse (data.onResponse json)
+                }
 
 
 ok : value -> Response value
@@ -35,7 +69,7 @@ ok value =
     Success value
 
 
-err : Json.Decode.Value -> Response value
+err : String -> Response value
 err reason =
     Failure reason
 
@@ -51,7 +85,7 @@ fromDatabaseQuery query =
                         ok value
 
                     Err problem ->
-                        err (Json.Encode.string (Json.Decode.errorToString problem))
+                        err (Json.Decode.errorToString problem)
         }
 
 
@@ -72,7 +106,7 @@ toCmd options response =
             options.onSuccess value
 
         Failure reason ->
-            options.onFailure reason
+            options.onFailure (Json.Encode.string reason)
 
         Query query ->
             sendMessage

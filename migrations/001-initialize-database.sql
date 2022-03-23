@@ -16,6 +16,7 @@ CREATE TABLE posts (
 );
 
 CREATE TABLE user_authored_post (
+  id INTEGER PRIMARY KEY,
   userId  INTEGER NOT NULL,
   postId  INTEGER NOT NULL
 );
@@ -23,6 +24,7 @@ CREATE INDEX index__user_authored_post__userId ON user_authored_post (userId);
 CREATE INDEX index__user_authored_post__postId ON user_authored_post (postId);
 
 CREATE TABLE user_liked_post (
+  id INTEGER PRIMARY KEY,
   userId  INTEGER NOT NULL,
   postId  INTEGER NOT NULL
 );

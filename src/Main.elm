@@ -1,6 +1,7 @@
 port module Main exposing (main)
 
 import Dict exposing (Dict)
+import GraphQL.Context
 import GraphQL.Response exposing (Response)
 import Json.Decode
 import Json.Encode
@@ -62,16 +63,25 @@ type alias Model =
 
 init : Json.Decode.Value -> ( Model, Cmd Msg )
 init flags =
-    ( { requests = Dict.empty
-      }
-    , case
-        Json.Decode.decodeValue
-            (Json.Decode.map2 Tuple.pair
-                (Json.Decode.field "objectName" Json.Decode.string)
-                (Json.Decode.field "fieldName" Json.Decode.string)
-            )
-            flags
-      of
+    let
+        objectAndFieldResult : Result Json.Decode.Error ( String, String )
+        objectAndFieldResult =
+            Json.Decode.decodeValue
+                (Json.Decode.map2 Tuple.pair
+                    (Json.Decode.field "objectName" Json.Decode.string)
+                    (Json.Decode.field "fieldName" Json.Decode.string)
+                )
+                flags
+
+        context : GraphQL.Context.Context
+        context =
+            Json.Decode.decodeValue
+                (Json.Decode.field "context" GraphQL.Context.decoder)
+                flags
+                |> Result.withDefault GraphQL.Context.fallback
+    in
+    ( { requests = Dict.empty }
+    , case objectAndFieldResult of
         Ok ( "Query", "hello" ) ->
             createResolver
                 { flags = flags
@@ -122,7 +132,7 @@ init flags =
                 { flags = flags
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.CreatePost.argumentsDecoder
-                , resolver = Resolvers.Mutation.CreatePost.resolver
+                , resolver = Resolvers.Mutation.CreatePost.resolver context
                 , toJson = Schema.Post.encode
                 }
 

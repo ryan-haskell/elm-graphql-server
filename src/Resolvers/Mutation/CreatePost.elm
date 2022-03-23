@@ -1,11 +1,15 @@
 module Resolvers.Mutation.CreatePost exposing (argumentsDecoder, resolver)
 
+import GraphQL.Context exposing (Context)
 import GraphQL.Response
 import Json.Decode
 import Schema.Post exposing (Post)
+import Schema.UserAuthoredPost
 import Table.Posts
 import Table.Posts.Select
 import Table.Posts.Value
+import Table.UserAuthoredPost
+import Table.UserAuthoredPost.Value
 import Table.Users
 
 
@@ -22,13 +26,32 @@ argumentsDecoder =
         (Json.Decode.field "caption" Json.Decode.string)
 
 
-resolver : () -> Arguments -> GraphQL.Response.Response Post
-resolver _ args =
-    Table.Posts.insertOne
+resolver : Context -> () -> Arguments -> GraphQL.Response.Response Post
+resolver context _ args =
+    case context.currentUserId of
+        Nothing ->
+            GraphQL.Response.err "Must be signed in to create a post."
+
+        Just currentUserId ->
+            Table.Posts.insertOne
+                { values =
+                    [ Table.Posts.Value.imageUrls args.imageUrls
+                    , Table.Posts.Value.caption args.caption
+                    ]
+                , returning = Schema.Post.selectAll
+                }
+                |> GraphQL.Response.fromDatabaseQuery
+                |> GraphQL.Response.andThen (createUserAuthoredPost currentUserId)
+
+
+createUserAuthoredPost : Int -> Post -> GraphQL.Response.Response Post
+createUserAuthoredPost currentUserId post =
+    Table.UserAuthoredPost.insertOne
         { values =
-            [ Table.Posts.Value.imageUrls args.imageUrls
-            , Table.Posts.Value.caption args.caption
+            [ Table.UserAuthoredPost.Value.postId post.id
+            , Table.UserAuthoredPost.Value.userId currentUserId
             ]
-        , returning = Schema.Post.selectAll
+        , returning = Schema.UserAuthoredPost.selectAll
         }
         |> GraphQL.Response.fromDatabaseQuery
+        |> GraphQL.Response.map (\_ -> post)
