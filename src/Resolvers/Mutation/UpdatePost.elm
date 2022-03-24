@@ -4,7 +4,7 @@ import GraphQL.Info exposing (Info)
 import GraphQL.Response
 import Json.Decode
 import Optional exposing (Optional)
-import Resolvers.Query.Edges.UserAuthoredPost
+import Resolvers.Post.Author
 import Schema.Post exposing (Post)
 import Table.Posts
 import Table.Posts.Select
@@ -45,7 +45,7 @@ resolver info _ args =
     in
     if GraphQL.Info.hasSelection "author" info then
         updatePost
-            |> GraphQL.Response.andThen Resolvers.Query.Edges.UserAuthoredPost.fetchAuthorsForMaybeItem
+            |> GraphQL.Response.andThen Resolvers.Post.Author.includeForMaybe
 
     else
         updatePost

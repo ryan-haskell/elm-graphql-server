@@ -2,7 +2,7 @@ module Resolvers.Query.Posts exposing (resolver)
 
 import GraphQL.Info exposing (Info)
 import GraphQL.Response exposing (Response)
-import Resolvers.Query.Edges.UserAuthoredPost
+import Resolvers.Post.Author
 import Schema.Post exposing (Post)
 import Schema.User exposing (User)
 import Schema.UserAuthoredPost exposing (UserAuthoredPost)
@@ -32,7 +32,7 @@ resolver info _ args =
     in
     if isSelectingAuthor then
         postsQuery
-            |> GraphQL.Response.andThen Resolvers.Query.Edges.UserAuthoredPost.fetchAuthorsForList
+            |> GraphQL.Response.andThen Resolvers.Post.Author.includeForList
 
     else
         postsQuery

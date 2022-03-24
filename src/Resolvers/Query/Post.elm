@@ -5,7 +5,7 @@ import GraphQL.Info exposing (Info)
 import GraphQL.Response exposing (Response)
 import Json.Decode
 import Json.Encode
-import Resolvers.Query.Edges.UserAuthoredPost
+import Resolvers.Post.Author
 import Schema.Post exposing (Post)
 import Table.Posts
 import Table.Posts.Select
@@ -36,7 +36,7 @@ resolver info parent args =
     in
     if GraphQL.Info.hasSelection "author" info then
         findPost
-            |> GraphQL.Response.andThen Resolvers.Query.Edges.UserAuthoredPost.fetchAuthorsForMaybeItem
+            |> GraphQL.Response.andThen Resolvers.Post.Author.includeForMaybe
 
     else
         findPost

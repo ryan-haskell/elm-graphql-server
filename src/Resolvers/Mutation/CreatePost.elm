@@ -4,7 +4,7 @@ import GraphQL.Context exposing (Context)
 import GraphQL.Info exposing (Info)
 import GraphQL.Response
 import Json.Decode
-import Resolvers.Query.Edges.UserAuthoredPost
+import Resolvers.Post.Author
 import Schema.Post exposing (Post)
 import Schema.UserAuthoredPost
 import Table.Posts
@@ -37,7 +37,7 @@ resolver info context _ args =
         Just currentUserId ->
             if GraphQL.Info.hasSelection "author" info then
                 createPostAndEdge args currentUserId
-                    |> GraphQL.Response.andThen Resolvers.Query.Edges.UserAuthoredPost.fetchAuthorsForItem
+                    |> GraphQL.Response.andThen Resolvers.Post.Author.include
 
             else
                 createPostAndEdge args currentUserId
