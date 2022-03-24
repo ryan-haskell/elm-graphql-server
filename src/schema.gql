@@ -38,5 +38,5 @@ type Post {
   imageUrls: [String!]!
   caption: String!
   createdAt: Posix!
-  # author: User
+  author: User
 }

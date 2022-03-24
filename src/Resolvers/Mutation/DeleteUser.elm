@@ -24,10 +24,6 @@ resolver : () -> Arguments -> GraphQL.Response.Response (Maybe User)
 resolver _ args =
     Table.Users.deleteOne
         { where_ = Just (Table.Users.Where.Id.equals args.id)
-        , returning =
-            Table.Users.Select.new User
-                |> Table.Users.Select.id
-                |> Table.Users.Select.username
-                |> Table.Users.Select.avatarUrl
+        , returning = Schema.User.selectAll
         }
         |> GraphQL.Response.fromDatabaseQuery

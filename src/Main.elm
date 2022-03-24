@@ -2,6 +2,7 @@ port module Main exposing (main)
 
 import Dict exposing (Dict)
 import GraphQL.Context
+import GraphQL.Info
 import GraphQL.Response exposing (Response)
 import Json.Decode
 import Json.Encode
@@ -14,6 +15,7 @@ import Resolvers.Mutation.DeletePost
 import Resolvers.Mutation.DeleteUser
 import Resolvers.Mutation.UpdatePost
 import Resolvers.Mutation.UpdateUser
+import Resolvers.Post.Author
 import Resolvers.Post.Caption
 import Resolvers.Post.CreatedAt
 import Resolvers.Post.Id
@@ -75,10 +77,11 @@ init flags =
 
         context : GraphQL.Context.Context
         context =
-            Json.Decode.decodeValue
-                (Json.Decode.field "context" GraphQL.Context.decoder)
-                flags
-                |> Result.withDefault GraphQL.Context.fallback
+            GraphQL.Context.fromJson "context" flags
+
+        info : GraphQL.Info.Info
+        info =
+            GraphQL.Info.fromJson "info" flags
     in
     ( { requests = Dict.empty }
     , case objectAndFieldResult of
@@ -123,7 +126,7 @@ init flags =
                 { flags = flags
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Json.Decode.succeed ()
-                , resolver = Resolvers.Query.Posts.resolver
+                , resolver = Resolvers.Query.Posts.resolver info
                 , toJson = Json.Encode.list Schema.Post.encode
                 }
 
@@ -205,7 +208,7 @@ init flags =
                 , parentDecoder = Schema.User.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.User.AvatarUrl.resolver
-                , toJson = Maybe.map Json.Encode.string >> Maybe.withDefault Json.Encode.null
+                , toJson = Json.Encode.Extra.maybe Json.Encode.string
                 }
 
         Ok ( "Post", "id" ) ->
@@ -242,6 +245,15 @@ init flags =
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Post.CreatedAt.resolver
                 , toJson = Json.Encode.int << Time.posixToMillis
+                }
+
+        Ok ( "Post", "author" ) ->
+            createResolver
+                { flags = flags
+                , parentDecoder = Schema.Post.decoder
+                , argsDecoder = Json.Decode.succeed ()
+                , resolver = Resolvers.Post.Author.resolver
+                , toJson = Json.Encode.Extra.maybe Schema.User.encode
                 }
 
         Ok ( objectName, fieldName ) ->

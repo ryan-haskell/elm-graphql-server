@@ -1,4 +1,4 @@
-module Database.Utils exposing (decodeJsonTextColumn, wrapStringValue)
+module Database.Utils exposing (decodeJsonTextColumn, wrapListValue, wrapStringValue)
 
 {-| Wraps raw string values so string literals don't accidentally
 become invalid SQL syntax or [bobby drop tables](https://xkcd.com/327/).
@@ -19,6 +19,23 @@ import Json.Decode
 wrapStringValue : String -> String
 wrapStringValue str =
     "'" ++ String.replace "'" "''" str ++ "'"
+
+
+{-| Formats a list of values to a SQL list, for use in `IN` clauses.
+
+    wrapListValue String.fromInt [ 1, 2, 3 ] == "( 1, 2, 3 )"
+
+    wrapListValue wrapStringValue [ "A", "B", "C" ] == "( 'A', 'B', 'C' )"
+
+-}
+wrapListValue : (value -> String) -> List value -> String
+wrapListValue toString values =
+    case values of
+        [] ->
+            "()"
+
+        items ->
+            "( " ++ (List.map toString values |> String.join ", ") ++ " )"
 
 
 {-| In our SQL database, we store our JSON as raw TEXT columns.

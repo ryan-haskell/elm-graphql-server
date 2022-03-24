@@ -34,10 +34,6 @@ resolver _ args =
                 , args.avatarUrl |> Optional.map Table.Users.Value.avatarUrl
                 ]
         , where_ = Just (Table.Users.Where.Id.equals args.id)
-        , returning =
-            Table.Users.Select.new User
-                |> Table.Users.Select.id
-                |> Table.Users.Select.username
-                |> Table.Users.Select.avatarUrl
+        , returning = Schema.User.selectAll
         }
         |> GraphQL.Response.fromDatabaseQuery

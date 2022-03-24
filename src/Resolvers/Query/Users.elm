@@ -11,10 +11,6 @@ resolver _ args =
     Table.Users.findAll
         { where_ = Nothing
         , limit = Just 25
-        , select =
-            Table.Users.Select.new User
-                |> Table.Users.Select.id
-                |> Table.Users.Select.username
-                |> Table.Users.Select.avatarUrl
+        , select = Schema.User.selectAll
         }
         |> GraphQL.Response.fromDatabaseQuery

@@ -1,12 +1,12 @@
 module Table.Posts.Select exposing
     ( Decoder, new
-    , id, imageUrls, caption, createdAt
+    , id, imageUrls, caption, createdAt, author
     )
 
 {-|
 
 @docs Decoder, new
-@docs id, imageUrls, caption, createdAt
+@docs id, imageUrls, caption, createdAt, author
 
 -}
 
@@ -54,3 +54,8 @@ createdAt decoder =
     Database.Select.with Table.Posts.Column.createdAt
         (Json.Decode.int |> Json.Decode.map Time.millisToPosix)
         decoder
+
+
+author : Decoder (Maybe user -> value) -> Decoder value
+author decoder =
+    Database.Select.none decoder

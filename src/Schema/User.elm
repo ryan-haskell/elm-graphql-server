@@ -1,7 +1,8 @@
-module Schema.User exposing (User, decoder, encode)
+module Schema.User exposing (User, decoder, encode, selectAll)
 
 import Json.Decode
 import Json.Encode
+import Table.Users.Select
 
 
 type alias User =
@@ -9,6 +10,14 @@ type alias User =
     , username : String
     , avatarUrl : Maybe String
     }
+
+
+selectAll : Table.Users.Select.Decoder User
+selectAll =
+    Table.Users.Select.new User
+        |> Table.Users.Select.id
+        |> Table.Users.Select.username
+        |> Table.Users.Select.avatarUrl
 
 
 decoder : Json.Decode.Decoder User

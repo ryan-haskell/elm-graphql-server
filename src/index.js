@@ -60,9 +60,9 @@ const fieldHandler = (objectName) => ({
   get (target, fieldName, receiver) {
     if (fieldName === "__isTypeOf") return () => objectName
     return (parent, args, context, info) => {
-      // console.log({ currentUserId: context.currentUserId })
+      // console.log(JSON.stringify(info.fieldNodes[0].selectionSet.selections, null, 2))
       let worker = Elm.Main.init({
-        flags: { objectName, fieldName, parent, args, context },
+        flags: { objectName, fieldName, parent, args, context, info },
       })
 
       return new Promise((resolve, reject) => {

@@ -28,10 +28,6 @@ resolver _ args =
             [ Table.Users.Value.username args.username
             , Table.Users.Value.avatarUrl args.avatarUrl
             ]
-        , returning =
-            Table.Users.Select.new User
-                |> Table.Users.Select.id
-                |> Table.Users.Select.username
-                |> Table.Users.Select.avatarUrl
+        , returning = Schema.User.selectAll
         }
         |> GraphQL.Response.fromDatabaseQuery

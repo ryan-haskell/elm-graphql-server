@@ -25,10 +25,6 @@ resolver : () -> Arguments -> Response (Maybe User)
 resolver parent args =
     Table.Users.findOne
         { where_ = Just (Table.Users.Where.Id.equals args.id)
-        , select =
-            Table.Users.Select.new User
-                |> Table.Users.Select.id
-                |> Table.Users.Select.username
-                |> Table.Users.Select.avatarUrl
+        , select = Schema.User.selectAll
         }
         |> GraphQL.Response.fromDatabaseQuery
