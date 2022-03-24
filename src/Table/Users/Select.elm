@@ -1,11 +1,11 @@
 module Table.Users.Select exposing
-    ( Decoder, new
+    ( Decoder, new, map
     , id, username, avatarUrl
     )
 
 {-|
 
-@docs Decoder, new
+@docs Decoder, new, map
 @docs id, username, avatarUrl
 
 -}
@@ -24,6 +24,11 @@ new value =
     Database.Select.new
         Table.Users.Column.toColumnName
         value
+
+
+map : (a -> b) -> Decoder a -> Decoder b
+map =
+    Database.Select.map
 
 
 id : Decoder (Int -> value) -> Decoder value

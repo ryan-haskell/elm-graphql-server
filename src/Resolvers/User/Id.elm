@@ -1,9 +1,9 @@
 module Resolvers.User.Id exposing (resolver)
 
 import GraphQL.Response exposing (Response)
-import Schema.User exposing (User)
+import Schema
 
 
-resolver : User -> () -> Response Int
-resolver user args =
+resolver : Schema.User -> () -> Response Int
+resolver (Schema.User user) args =
     GraphQL.Response.ok user.id

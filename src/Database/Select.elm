@@ -1,7 +1,7 @@
 module Database.Select exposing
     ( Decoder, new
     , with, none
-    , mapDecoder
+    , map, mapDecoder
     , toSql, toJsonDecoder
     )
 
@@ -10,7 +10,7 @@ module Database.Select exposing
 @docs Decoder, new
 @docs with, none
 
-@docs mapDecoder
+@docs map, mapDecoder
 
 @docs toSql, toJsonDecoder
 
@@ -78,6 +78,15 @@ toSql decoder =
 toJsonDecoder : Decoder column value -> Json.Decode.Decoder value
 toJsonDecoder (Decoder select) =
     select.decoder
+
+
+map : (a -> b) -> Decoder column a -> Decoder column b
+map fn (Decoder select) =
+    Decoder
+        { toColumnName = select.toColumnName
+        , columns = select.columns
+        , decoder = Json.Decode.map fn select.decoder
+        }
 
 
 mapDecoder : (Json.Decode.Decoder a -> Json.Decode.Decoder b) -> Decoder column a -> Decoder column b

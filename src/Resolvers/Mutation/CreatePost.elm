@@ -60,7 +60,7 @@ createUserAuthoredPost : Int -> Post -> GraphQL.Response.Response Post
 createUserAuthoredPost currentUserId post =
     Table.UserAuthoredPost.insertOne
         { values =
-            [ Table.UserAuthoredPost.Value.postId post.id
+            [ Table.UserAuthoredPost.Value.postId (Schema.Post.id post)
             , Table.UserAuthoredPost.Value.userId currentUserId
             ]
         , returning = Schema.UserAuthoredPost.selectAll

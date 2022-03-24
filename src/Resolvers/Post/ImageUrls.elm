@@ -1,9 +1,9 @@
 module Resolvers.Post.ImageUrls exposing (resolver)
 
 import GraphQL.Response exposing (Response)
-import Schema.Post exposing (Post)
+import Schema
 
 
-resolver : Post -> () -> Response (List String)
-resolver post args =
+resolver : Schema.Post -> () -> Response (List String)
+resolver (Schema.Post post) args =
     GraphQL.Response.ok post.imageUrls

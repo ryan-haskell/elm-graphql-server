@@ -1,39 +1,35 @@
-module Schema.User exposing (User, decoder, encode, selectAll)
+module Schema.User exposing
+    ( User, selectAll
+    , decoder, encode
+    )
+
+{-|
+
+@docs User, selectAll
+@docs decoder, encode
+
+-}
 
 import Json.Decode
 import Json.Encode
+import Schema
 import Table.Users.Select
 
 
 type alias User =
-    { id : Int
-    , username : String
-    , avatarUrl : Maybe String
-    }
+    Schema.User
 
 
-selectAll : Table.Users.Select.Decoder User
+selectAll : Table.Users.Select.Decoder Schema.User
 selectAll =
-    Table.Users.Select.new User
-        |> Table.Users.Select.id
-        |> Table.Users.Select.username
-        |> Table.Users.Select.avatarUrl
+    Schema.user.selectAll
 
 
-decoder : Json.Decode.Decoder User
+decoder : Json.Decode.Decoder Schema.User
 decoder =
-    Json.Decode.map3 User
-        (Json.Decode.field "id" Json.Decode.int)
-        (Json.Decode.field "username" Json.Decode.string)
-        (Json.Decode.maybe (Json.Decode.field "avatarUrl" Json.Decode.string))
+    Schema.user.decoder
 
 
-encode : User -> Json.Decode.Value
-encode user =
-    Json.Encode.object
-        (List.filterMap identity
-            [ Just ( "id", Json.Encode.int user.id )
-            , Just ( "username", Json.Encode.string user.username )
-            , user.avatarUrl |> Maybe.map (\avatarUrl -> ( "avatarUrl", Json.Encode.string avatarUrl ))
-            ]
-        )
+encode : Schema.User -> Json.Encode.Value
+encode =
+    Schema.user.encode

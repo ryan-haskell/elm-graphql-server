@@ -11,8 +11,10 @@ module Resolvers.Post.Author exposing
 
 -}
 
+import Database.Include
 import GraphQL.Response exposing (Response)
 import List.Extra
+import Schema
 import Schema.Post exposing (Post)
 import Schema.User exposing (User)
 import Schema.UserAuthoredPost exposing (UserAuthoredPost)
@@ -24,25 +26,22 @@ import Table.Users.Where.Id
 
 
 resolver : Post -> () -> Response (Maybe User)
-resolver post args =
+resolver (Schema.Post post) args =
     GraphQL.Response.ok post.author
 
 
 include : Post -> Response Post
 include post =
-    includeForList [ post ]
-        |> GraphQL.Response.map (\posts -> List.head posts |> Maybe.withDefault post)
+    Database.Include.fromListToItem
+        includeForList
+        post
 
 
 includeForMaybe : Maybe Post -> Response (Maybe Post)
 includeForMaybe maybePost =
-    case maybePost of
-        Just post ->
-            include post
-                |> GraphQL.Response.map Just
-
-        Nothing ->
-            GraphQL.Response.ok Nothing
+    Database.Include.fromListToMaybe
+        includeForList
+        maybePost
 
 
 includeForList : List Post -> Response (List Post)
@@ -60,7 +59,7 @@ fetchUserAuthoredPostEdges posts =
     Table.UserAuthoredPost.findAll
         { select = Schema.UserAuthoredPost.selectAll
         , limit = Nothing
-        , where_ = Just (Table.UserAuthoredPost.Where.PostId.in_ (List.map .id posts))
+        , where_ = Just (Table.UserAuthoredPost.Where.PostId.in_ (List.map Schema.Post.id posts))
         }
         |> GraphQL.Response.fromDatabaseQuery
 
@@ -82,7 +81,7 @@ fillInPostsWithAuthors posts edges users =
 
 
 updatePostWithMatchingUser : List UserAuthoredPost -> List User -> Post -> Post
-updatePostWithMatchingUser edges users post =
+updatePostWithMatchingUser edges users (Schema.Post post) =
     let
         edgesMatchingThisPost : List UserAuthoredPost
         edgesMatchingThisPost =
@@ -94,6 +93,6 @@ updatePostWithMatchingUser edges users post =
 
         findUserForEdge : UserAuthoredPost -> Maybe User
         findUserForEdge edge =
-            List.Extra.find (\user -> user.id == edge.userId) users
+            List.Extra.find (\(Schema.User user) -> user.id == edge.userId) users
     in
-    { post | author = List.head usersMatchingThisPost }
+    Schema.Post { post | author = List.head usersMatchingThisPost }

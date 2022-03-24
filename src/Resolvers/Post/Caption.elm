@@ -1,9 +1,10 @@
 module Resolvers.Post.Caption exposing (resolver)
 
 import GraphQL.Response exposing (Response)
+import Schema
 import Schema.Post exposing (Post)
 
 
-resolver : Post -> () -> Response String
-resolver post args =
+resolver : Schema.Post -> () -> Response String
+resolver (Schema.Post post) args =
     GraphQL.Response.ok post.caption
