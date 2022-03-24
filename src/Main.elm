@@ -117,7 +117,7 @@ init flags =
                 { flags = flags
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Query.Post.argumentsDecoder
-                , resolver = Resolvers.Query.Post.resolver
+                , resolver = Resolvers.Query.Post.resolver info
                 , toJson = Json.Encode.Extra.maybe Schema.Post.encode
                 }
 
@@ -135,7 +135,7 @@ init flags =
                 { flags = flags
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.CreatePost.argumentsDecoder
-                , resolver = Resolvers.Mutation.CreatePost.resolver context
+                , resolver = Resolvers.Mutation.CreatePost.resolver info context
                 , toJson = Schema.Post.encode
                 }
 
@@ -144,7 +144,7 @@ init flags =
                 { flags = flags
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.UpdatePost.argumentsDecoder
-                , resolver = Resolvers.Mutation.UpdatePost.resolver
+                , resolver = Resolvers.Mutation.UpdatePost.resolver info
                 , toJson = Json.Encode.Extra.maybe Schema.Post.encode
                 }
 
@@ -153,7 +153,7 @@ init flags =
                 { flags = flags
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.DeletePost.argumentsDecoder
-                , resolver = Resolvers.Mutation.DeletePost.resolver
+                , resolver = Resolvers.Mutation.DeletePost.resolver info
                 , toJson = Json.Encode.Extra.maybe Schema.Post.encode
                 }
 

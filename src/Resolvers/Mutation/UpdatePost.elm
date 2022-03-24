@@ -1,8 +1,10 @@
 module Resolvers.Mutation.UpdatePost exposing (argumentsDecoder, resolver)
 
+import GraphQL.Info exposing (Info)
 import GraphQL.Response
 import Json.Decode
 import Optional exposing (Optional)
+import Resolvers.Query.Edges.UserAuthoredPost
 import Schema.Post exposing (Post)
 import Table.Posts
 import Table.Posts.Select
@@ -25,15 +27,25 @@ argumentsDecoder =
         (Optional.decoder "caption" Json.Decode.string)
 
 
-resolver : () -> Arguments -> GraphQL.Response.Response (Maybe Post)
-resolver _ args =
-    Table.Posts.updateOne
-        { set =
-            Optional.toList
-                [ args.imageUrls |> Optional.map Table.Posts.Value.imageUrls
-                , args.caption |> Optional.map Table.Posts.Value.caption
-                ]
-        , where_ = Just (Table.Posts.Where.Id.equals args.id)
-        , returning = Schema.Post.selectAll
-        }
-        |> GraphQL.Response.fromDatabaseQuery
+resolver : Info -> () -> Arguments -> GraphQL.Response.Response (Maybe Post)
+resolver info _ args =
+    let
+        updatePost : GraphQL.Response.Response (Maybe Post)
+        updatePost =
+            Table.Posts.updateOne
+                { set =
+                    Optional.toList
+                        [ args.imageUrls |> Optional.map Table.Posts.Value.imageUrls
+                        , args.caption |> Optional.map Table.Posts.Value.caption
+                        ]
+                , where_ = Just (Table.Posts.Where.Id.equals args.id)
+                , returning = Schema.Post.selectAll
+                }
+                |> GraphQL.Response.fromDatabaseQuery
+    in
+    if GraphQL.Info.hasSelection "author" info then
+        updatePost
+            |> GraphQL.Response.andThen Resolvers.Query.Edges.UserAuthoredPost.fetchAuthorsForMaybeItem
+
+    else
+        updatePost

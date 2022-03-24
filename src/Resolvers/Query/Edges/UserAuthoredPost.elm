@@ -1,4 +1,8 @@
-module Resolvers.Query.Edges.UserAuthoredPost exposing (fetchAuthorsForList)
+module Resolvers.Query.Edges.UserAuthoredPost exposing
+    ( fetchAuthorsForItem
+    , fetchAuthorsForList
+    , fetchAuthorsForMaybeItem
+    )
 
 import GraphQL.Response exposing (Response)
 import Schema.Post exposing (Post)
@@ -9,6 +13,23 @@ import Table.UserAuthoredPost.Where.Id
 import Table.UserAuthoredPost.Where.PostId
 import Table.Users
 import Table.Users.Where.Id
+
+
+fetchAuthorsForMaybeItem : Maybe Post -> Response (Maybe Post)
+fetchAuthorsForMaybeItem maybePost =
+    case maybePost of
+        Just post ->
+            fetchAuthorsForItem post
+                |> GraphQL.Response.map Just
+
+        Nothing ->
+            GraphQL.Response.ok Nothing
+
+
+fetchAuthorsForItem : Post -> Response Post
+fetchAuthorsForItem post =
+    fetchAuthorsForList [ post ]
+        |> GraphQL.Response.map (\posts -> List.head posts |> Maybe.withDefault post)
 
 
 fetchAuthorsForList : List Post -> Response (List Post)

@@ -1,8 +1,10 @@
 module Resolvers.Mutation.CreatePost exposing (argumentsDecoder, resolver)
 
 import GraphQL.Context exposing (Context)
+import GraphQL.Info exposing (Info)
 import GraphQL.Response
 import Json.Decode
+import Resolvers.Query.Edges.UserAuthoredPost
 import Schema.Post exposing (Post)
 import Schema.UserAuthoredPost
 import Table.Posts
@@ -26,22 +28,32 @@ argumentsDecoder =
         (Json.Decode.field "caption" Json.Decode.string)
 
 
-resolver : Context -> () -> Arguments -> GraphQL.Response.Response Post
-resolver context _ args =
+resolver : Info -> Context -> () -> Arguments -> GraphQL.Response.Response Post
+resolver info context _ args =
     case context.currentUserId of
         Nothing ->
             GraphQL.Response.err "Must be signed in to create a post."
 
         Just currentUserId ->
-            Table.Posts.insertOne
-                { values =
-                    [ Table.Posts.Value.imageUrls args.imageUrls
-                    , Table.Posts.Value.caption args.caption
-                    ]
-                , returning = Schema.Post.selectAll
-                }
-                |> GraphQL.Response.fromDatabaseQuery
-                |> GraphQL.Response.andThen (createUserAuthoredPost currentUserId)
+            if GraphQL.Info.hasSelection "author" info then
+                createPostAndEdge args currentUserId
+                    |> GraphQL.Response.andThen Resolvers.Query.Edges.UserAuthoredPost.fetchAuthorsForItem
+
+            else
+                createPostAndEdge args currentUserId
+
+
+createPostAndEdge : Arguments -> Int -> GraphQL.Response.Response Post
+createPostAndEdge args currentUserId =
+    Table.Posts.insertOne
+        { values =
+            [ Table.Posts.Value.imageUrls args.imageUrls
+            , Table.Posts.Value.caption args.caption
+            ]
+        , returning = Schema.Post.selectAll
+        }
+        |> GraphQL.Response.fromDatabaseQuery
+        |> GraphQL.Response.andThen (createUserAuthoredPost currentUserId)
 
 
 createUserAuthoredPost : Int -> Post -> GraphQL.Response.Response Post
