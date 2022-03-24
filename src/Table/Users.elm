@@ -67,7 +67,7 @@ insertOne :
 insertOne =
     Database.Query.insertOne
         { tableName = tableName
-        , toColumnName = Table.Users.Column.toString
+        , toColumnName = Table.Users.Column.toColumnName
         }
 
 
@@ -80,7 +80,7 @@ updateOne :
 updateOne =
     Database.Query.updateOne
         { tableName = tableName
-        , toColumnName = Table.Users.Column.toString
+        , toColumnName = Table.Users.Column.toColumnName
         }
 
 
@@ -92,5 +92,5 @@ deleteOne :
 deleteOne =
     Database.Query.deleteOne
         { tableName = tableName
-        , toColumnName = Table.Users.Column.toString
+        , toColumnName = Table.Users.Column.toColumnName
         }

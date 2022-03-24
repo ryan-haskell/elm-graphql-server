@@ -1,7 +1,7 @@
 module Table.UserAuthoredPost.Column exposing
     ( Column
     , id, postId, userId
-    , toString
+    , toColumnName
     )
 
 {-|
@@ -9,7 +9,7 @@ module Table.UserAuthoredPost.Column exposing
 @docs Column
 @docs id, postId, userId
 
-@docs toString
+@docs toColumnName
 
 -}
 
@@ -35,8 +35,8 @@ userId =
     UserId
 
 
-toString : Column -> String
-toString column =
+toColumnName : Column -> String
+toColumnName column =
     case column of
         Id ->
             "id"

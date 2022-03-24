@@ -1,7 +1,7 @@
 module Table.Users.Column exposing
     ( Column
     , id, username, avatarUrl
-    , toString
+    , toColumnName
     )
 
 {-|
@@ -9,7 +9,7 @@ module Table.Users.Column exposing
 @docs Column
 @docs id, username, avatarUrl
 
-@docs toString
+@docs toColumnName
 
 -}
 
@@ -35,8 +35,8 @@ avatarUrl =
     AvatarUrl
 
 
-toString : Column -> String
-toString column =
+toColumnName : Column -> String
+toColumnName column =
     case column of
         Id ->
             "id"

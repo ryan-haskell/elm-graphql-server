@@ -1,5 +1,8 @@
 module Database.Utils exposing (decodeJsonTextColumn, wrapListValue, wrapStringValue)
 
+import Json.Decode
+
+
 {-| Wraps raw string values so string literals don't accidentally
 become invalid SQL syntax or [bobby drop tables](https://xkcd.com/327/).
 
@@ -12,10 +15,6 @@ Here are some examples:
   - `Ryan "Cool guy" Haskell` -> `'Ryan "Cool guy" Haskell'`
 
 -}
-
-import Json.Decode
-
-
 wrapStringValue : String -> String
 wrapStringValue str =
     "'" ++ String.replace "'" "''" str ++ "'"

@@ -27,11 +27,11 @@ inIntList =
 toSql : Clause column -> String
 toSql clause =
     case clause of
-        EqualsInt left right ->
-            left ++ " = " ++ String.fromInt right
+        EqualsInt columnName intValue ->
+            columnName ++ " = " ++ String.fromInt intValue
 
-        EqualsString left right ->
-            left ++ " = " ++ Database.Utils.wrapStringValue right
+        EqualsString columnName stringValue ->
+            columnName ++ " = " ++ Database.Utils.wrapStringValue stringValue
 
-        InIntList left right ->
-            left ++ " IN " ++ Database.Utils.wrapListValue String.fromInt right
+        InIntList columnName listOfIntValues ->
+            columnName ++ " IN " ++ Database.Utils.wrapListValue String.fromInt listOfIntValues

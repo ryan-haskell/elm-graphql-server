@@ -6,6 +6,7 @@ import Schema.User exposing (User)
 import Schema.UserAuthoredPost exposing (UserAuthoredPost)
 import Table.UserAuthoredPost
 import Table.UserAuthoredPost.Where.Id
+import Table.UserAuthoredPost.Where.PostId
 import Table.Users
 import Table.Users.Where.Id
 
@@ -21,7 +22,7 @@ fetchUserAuthoredPostEdges posts =
     Table.UserAuthoredPost.findAll
         { select = Schema.UserAuthoredPost.selectAll
         , limit = Nothing
-        , where_ = Just (Table.UserAuthoredPost.Where.Id.in_ (List.map .id posts))
+        , where_ = Just (Table.UserAuthoredPost.Where.PostId.in_ (List.map .id posts))
         }
         |> GraphQL.Response.fromDatabaseQuery
 

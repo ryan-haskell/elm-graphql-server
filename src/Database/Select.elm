@@ -21,7 +21,7 @@ import Json.Decode
 
 type Decoder column value
     = Decoder
-        { toString : column -> String
+        { toColumnName : column -> String
         , decoder : Json.Decode.Decoder value
         , columns : List column
         }
@@ -31,9 +31,9 @@ new :
     (column -> String)
     -> value
     -> Decoder column value
-new toString fn =
+new toColumnName fn =
     Decoder
-        { toString = toString
+        { toColumnName = toColumnName
         , decoder = Json.Decode.succeed fn
         , columns = []
         }
@@ -46,13 +46,13 @@ with :
     -> Decoder column output
 with column decoder (Decoder select) =
     Decoder
-        { toString = select.toString
+        { toColumnName = select.toColumnName
         , columns = column :: select.columns
         , decoder =
             Json.Decode.map2 (<|)
                 select.decoder
                 (Json.Decode.field
-                    (select.toString column)
+                    (select.toColumnName column)
                     decoder
                 )
         }
@@ -61,7 +61,7 @@ with column decoder (Decoder select) =
 none : Decoder column (Maybe value -> output) -> Decoder column output
 none (Decoder select) =
     Decoder
-        { toString = select.toString
+        { toColumnName = select.toColumnName
         , columns = select.columns
         , decoder =
             Json.Decode.map2 (<|)
@@ -83,7 +83,7 @@ toJsonDecoder (Decoder select) =
 mapDecoder : (Json.Decode.Decoder a -> Json.Decode.Decoder b) -> Decoder column a -> Decoder column b
 mapDecoder fn (Decoder select) =
     Decoder
-        { toString = select.toString
+        { toColumnName = select.toColumnName
         , columns = select.columns
         , decoder = fn select.decoder
         }
@@ -96,5 +96,5 @@ mapDecoder fn (Decoder select) =
 toColumnList : Decoder column value -> List String
 toColumnList (Decoder select) =
     select.columns
-        |> List.map select.toString
+        |> List.map select.toColumnName
         |> List.reverse

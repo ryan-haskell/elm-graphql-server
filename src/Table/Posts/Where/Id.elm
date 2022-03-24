@@ -7,5 +7,5 @@ import Table.Posts.Column
 equals : Int -> Database.Where.Clause Table.Posts.Column.Column
 equals value =
     Database.Where.equalsInt
-        (Table.Posts.Column.toString Table.Posts.Column.id)
+        (Table.Posts.Column.toColumnName Table.Posts.Column.id)
         value

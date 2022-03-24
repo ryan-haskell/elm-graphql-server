@@ -24,7 +24,7 @@ type alias Decoder value =
 new : value -> Decoder value
 new value =
     Database.Select.new
-        Table.Posts.Column.toString
+        Table.Posts.Column.toColumnName
         value
 
 

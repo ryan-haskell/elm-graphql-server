@@ -1,7 +1,7 @@
 module Table.Posts.Column exposing
     ( Column
     , id, imageUrls, caption, createdAt
-    , toString
+    , toColumnName
     )
 
 {-|
@@ -9,7 +9,7 @@ module Table.Posts.Column exposing
 @docs Column
 @docs id, imageUrls, caption, createdAt
 
-@docs toString
+@docs toColumnName
 
 -}
 
@@ -41,8 +41,8 @@ createdAt =
     CreatedAt
 
 
-toString : Column -> String
-toString column =
+toColumnName : Column -> String
+toColumnName column =
     case column of
         Id ->
             "id"
