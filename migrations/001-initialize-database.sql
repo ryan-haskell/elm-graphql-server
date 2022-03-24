@@ -3,20 +3,20 @@
 --------------------------------------------------------------------------------
 
 CREATE TABLE users (
-  id INTEGER PRIMARY KEY,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
   username TEXT NOT NULL,
   avatarUrl TEXT
 );
 
 CREATE TABLE posts (
-  id INTEGER PRIMARY KEY,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
   createdAt INTEGER NOT NULL DEFAULT (strftime('%s000','now')), 
   imageUrls TEXT NOT NULL,
   caption TEXT NOT NULL
 );
 
 CREATE TABLE user_authored_post (
-  id INTEGER PRIMARY KEY,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
   userId  INTEGER NOT NULL,
   postId  INTEGER NOT NULL
 );
@@ -24,14 +24,14 @@ CREATE INDEX index__user_authored_post__userId ON user_authored_post (userId);
 CREATE INDEX index__user_authored_post__postId ON user_authored_post (postId);
 
 CREATE TABLE user_liked_post (
-  id INTEGER PRIMARY KEY,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
   userId  INTEGER NOT NULL,
   postId  INTEGER NOT NULL
 );
 CREATE INDEX index__user_liked_post__userId ON user_liked_post (userId);
 CREATE INDEX index__user_liked_post__postId ON user_liked_post (postId);
 
-INSERT INTO users (username) VALUES ("Ryan"), ("Duncan"), ("Scott");
+INSERT INTO users (username) VALUES ("Ryan"), ("Duncan");
 
 
 --------------------------------------------------------------------------------
