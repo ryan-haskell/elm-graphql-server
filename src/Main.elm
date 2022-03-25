@@ -109,7 +109,7 @@ init flags =
                 { flags = flags
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Json.Decode.succeed ()
-                , resolver = Resolvers.Query.Users.resolver
+                , resolver = Resolvers.Query.Users.resolver info
                 , toJson = Json.Encode.list Schema.User.encode
                 }
 

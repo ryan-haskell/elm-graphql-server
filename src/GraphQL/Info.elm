@@ -19,10 +19,6 @@ fromJson fieldName json =
             context
 
         Err reason ->
-            let
-                _ =
-                    Debug.log "Info failed to decode\n" reason
-            in
             fallback
 
 
