@@ -1,7 +1,9 @@
 module Resolvers.Mutation.DeleteUser exposing (argumentsDecoder, resolver)
 
+import GraphQL.Info exposing (Info)
 import GraphQL.Response
 import Json.Decode
+import Resolvers.User.Posts
 import Schema.User exposing (User)
 import Table.Users
 import Table.Users.Select
@@ -20,10 +22,19 @@ argumentsDecoder =
         (Json.Decode.field "id" Json.Decode.int)
 
 
-resolver : () -> Arguments -> GraphQL.Response.Response (Maybe User)
-resolver _ args =
-    Table.Users.deleteOne
-        { where_ = Just (Table.Users.Where.Id.equals args.id)
-        , returning = Schema.User.selectAll
-        }
-        |> GraphQL.Response.fromDatabaseQuery
+resolver : Info -> () -> Arguments -> GraphQL.Response.Response (Maybe User)
+resolver info _ args =
+    let
+        deleteUser =
+            Table.Users.deleteOne
+                { where_ = Just (Table.Users.Where.Id.equals args.id)
+                , returning = Schema.User.selectAll
+                }
+                |> GraphQL.Response.fromDatabaseQuery
+    in
+    if GraphQL.Info.hasSelection "posts" info then
+        deleteUser
+            |> GraphQL.Response.andThen Resolvers.User.Posts.includeForMaybe
+
+    else
+        deleteUser

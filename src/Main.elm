@@ -163,7 +163,7 @@ init flags =
                 { flags = flags
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.CreateUser.argumentsDecoder
-                , resolver = Resolvers.Mutation.CreateUser.resolver
+                , resolver = Resolvers.Mutation.CreateUser.resolver info
                 , toJson = Schema.User.encode
                 }
 
@@ -172,7 +172,7 @@ init flags =
                 { flags = flags
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.UpdateUser.argumentsDecoder
-                , resolver = Resolvers.Mutation.UpdateUser.resolver
+                , resolver = Resolvers.Mutation.UpdateUser.resolver info
                 , toJson = Json.Encode.Extra.maybe Schema.User.encode
                 }
 
@@ -181,7 +181,7 @@ init flags =
                 { flags = flags
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.DeleteUser.argumentsDecoder
-                , resolver = Resolvers.Mutation.DeleteUser.resolver
+                , resolver = Resolvers.Mutation.DeleteUser.resolver info
                 , toJson = Json.Encode.Extra.maybe Schema.User.encode
                 }
 
