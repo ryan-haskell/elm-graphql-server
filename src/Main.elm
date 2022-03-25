@@ -100,7 +100,7 @@ init flags =
                 { flags = flags
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Query.User.argumentsDecoder
-                , resolver = Resolvers.Query.User.resolver
+                , resolver = Resolvers.Query.User.resolver info
                 , toJson = Json.Encode.Extra.maybe Schema.User.encode
                 }
 
