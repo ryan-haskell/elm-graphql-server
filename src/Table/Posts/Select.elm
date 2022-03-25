@@ -1,11 +1,11 @@
 module Table.Posts.Select exposing
-    ( Decoder, new, map
+    ( Decoder, new
     , id, imageUrls, caption, createdAt, author
     )
 
 {-|
 
-@docs Decoder, new, map
+@docs Decoder, new
 @docs id, imageUrls, caption, createdAt, author
 
 -}
@@ -26,11 +26,6 @@ new value =
     Database.Select.new
         Table.Posts.Column.toColumnName
         value
-
-
-map : (internals -> value) -> Decoder internals -> Decoder value
-map =
-    Database.Select.map
 
 
 id : Decoder (Int -> value) -> Decoder value
@@ -63,4 +58,4 @@ createdAt decoder =
 
 author : Decoder (Maybe user -> value) -> Decoder value
 author decoder =
-    Database.Select.none decoder
+    Database.Select.return Nothing decoder

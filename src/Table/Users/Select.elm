@@ -1,12 +1,12 @@
 module Table.Users.Select exposing
-    ( Decoder, new, map
-    , id, username, avatarUrl
+    ( Decoder, new
+    , id, username, avatarUrl, posts
     )
 
 {-|
 
-@docs Decoder, new, map
-@docs id, username, avatarUrl
+@docs Decoder, new
+@docs id, username, avatarUrl, posts
 
 -}
 
@@ -24,11 +24,6 @@ new value =
     Database.Select.new
         Table.Users.Column.toColumnName
         value
-
-
-map : (a -> b) -> Decoder a -> Decoder b
-map =
-    Database.Select.map
 
 
 id : Decoder (Int -> value) -> Decoder value
@@ -50,3 +45,8 @@ avatarUrl decoder =
     Database.Select.with Table.Users.Column.avatarUrl
         (Json.Decode.maybe Json.Decode.string)
         decoder
+
+
+posts : Decoder (List post -> value) -> Decoder value
+posts decoder =
+    Database.Select.return [] decoder

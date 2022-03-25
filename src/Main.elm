@@ -27,6 +27,7 @@ import Resolvers.Query.User
 import Resolvers.Query.Users
 import Resolvers.User.AvatarUrl
 import Resolvers.User.Id
+import Resolvers.User.Posts
 import Resolvers.User.Username
 import Schema.Post
 import Schema.User
@@ -209,6 +210,15 @@ init flags =
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.User.AvatarUrl.resolver
                 , toJson = Json.Encode.Extra.maybe Json.Encode.string
+                }
+
+        Ok ( "User", "posts" ) ->
+            createResolver
+                { flags = flags
+                , parentDecoder = Schema.User.decoder
+                , argsDecoder = Json.Decode.succeed ()
+                , resolver = Resolvers.User.Posts.resolver
+                , toJson = Json.Encode.list Schema.Post.encode
                 }
 
         Ok ( "Post", "id" ) ->

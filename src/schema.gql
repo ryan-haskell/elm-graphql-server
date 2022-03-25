@@ -30,7 +30,7 @@ type User {
   id: Int!
   username: String!
   avatarUrl: String
-  # posts: [Post!]!
+  posts: [Post!]!
 }
 
 type Post {
