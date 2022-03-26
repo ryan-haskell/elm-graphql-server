@@ -1,4 +1,4 @@
-port module Main exposing (main)
+module Main exposing (main)
 
 import Dict exposing (Dict)
 import GraphQL.Context
@@ -8,6 +8,7 @@ import Json.Decode
 import Json.Encode
 import Json.Encode.Extra
 import Platform
+import Ports
 import Random
 import Resolvers.Mutation.CreatePost
 import Resolvers.Mutation.CreateUser
@@ -32,18 +33,6 @@ import Resolvers.User.Username
 import Schema.Post
 import Schema.User
 import Time
-
-
-port success : Json.Decode.Value -> Cmd msg
-
-
-port failure : Json.Decode.Value -> Cmd msg
-
-
-port databaseOut : { id : RequestId, sql : String } -> Cmd msg
-
-
-port databaseIn : ({ id : RequestId, response : Json.Decode.Value } -> msg) -> Sub msg
 
 
 main : Program Json.Decode.Value Model Msg
@@ -267,7 +256,7 @@ init flags =
                 }
 
         Ok ( objectName, fieldName ) ->
-            failure
+            Ports.failure
                 (Json.Encode.string
                     ("Did not recognize {{objectName}}.{{fieldName}}"
                         |> String.replace "{{objectName}}" objectName
@@ -276,7 +265,7 @@ init flags =
                 )
 
         Err _ ->
-            failure (Json.Encode.string "Field was not passed in.")
+            Ports.failure (Json.Encode.string "Field was not passed in.")
     )
 
 
@@ -300,14 +289,14 @@ createResolver options =
         Ok { parent, args } ->
             options.resolver parent args
                 |> GraphQL.Response.toCmd
-                    { onSuccess = options.toJson >> success
-                    , onFailure = failure
+                    { onSuccess = options.toJson >> Ports.success
+                    , onFailure = Ports.failure
                     , onDatabaseQuery = ResolverSentDatabaseQuery
                     }
 
         Err _ ->
             Json.Encode.string "Failed to decode parent/args."
-                |> failure
+                |> Ports.failure
 
 
 
@@ -335,7 +324,7 @@ update msg model =
 
         WorkerGeneratedRequestId options requestId ->
             ( { model | requests = Dict.insert requestId options.onResponse model.requests }
-            , databaseOut
+            , Ports.databaseOut
                 { id = requestId
                 , sql = options.sql
                 }
@@ -350,7 +339,7 @@ update msg model =
 
                 Nothing ->
                     ( model
-                    , failure (Json.Encode.string ("Couldn't find a request with ID: " ++ String.fromInt id))
+                    , Ports.failure (Json.Encode.string ("Couldn't find a request with ID: " ++ String.fromInt id))
                     )
 
 
@@ -360,4 +349,4 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    databaseIn JavascriptSentDatabaseResponse
+    Ports.databaseIn JavascriptSentDatabaseResponse
