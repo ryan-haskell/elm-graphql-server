@@ -9,7 +9,6 @@ import Json.Encode
 import Json.Encode.Extra
 import Platform
 import Ports
-import Random
 import Resolvers.Mutation.CreatePost
 import Resolvers.Mutation.CreateUser
 import Resolvers.Mutation.DeletePost
@@ -49,7 +48,7 @@ main =
 
 
 type alias Model =
-    { requests : Dict RequestId (Json.Decode.Value -> Cmd Msg)
+    { onResponse : Maybe (Json.Decode.Value -> Cmd Msg)
     }
 
 
@@ -73,7 +72,7 @@ init flags =
         info =
             GraphQL.Info.fromJson "info" flags
     in
-    ( { requests = Dict.empty }
+    ( { onResponse = Nothing }
     , case objectAndFieldResult of
         Ok ( "Query", "hello" ) ->
             createResolver
@@ -304,42 +303,33 @@ createResolver options =
 
 
 type Msg
-    = ResolverSentDatabaseQuery { sql : String, onResponse : Json.Decode.Value -> Cmd Msg }
-    | WorkerGeneratedRequestId { sql : String, onResponse : Json.Decode.Value -> Cmd Msg } RequestId
-    | JavascriptSentDatabaseResponse { id : RequestId, response : Json.Decode.Value }
-
-
-type alias RequestId =
-    Int
+    = ResolverSentDatabaseQuery
+        { sql : String
+        , onResponse : Json.Decode.Value -> Cmd Msg
+        }
+    | JavascriptSentDatabaseResponse
+        { response : Json.Decode.Value
+        }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ResolverSentDatabaseQuery options ->
-            ( model
-            , Random.int 0 Random.maxInt
-                |> Random.generate (WorkerGeneratedRequestId options)
+            ( { model | onResponse = Just options.onResponse }
+            , Ports.databaseOut { sql = options.sql }
             )
 
-        WorkerGeneratedRequestId options requestId ->
-            ( { model | requests = Dict.insert requestId options.onResponse model.requests }
-            , Ports.databaseOut
-                { id = requestId
-                , sql = options.sql
-                }
-            )
-
-        JavascriptSentDatabaseResponse { id, response } ->
-            case Dict.get id model.requests of
+        JavascriptSentDatabaseResponse { response } ->
+            case model.onResponse of
                 Just onResponse ->
-                    ( { model | requests = Dict.remove id model.requests }
+                    ( { model | onResponse = Nothing }
                     , onResponse response
                     )
 
                 Nothing ->
                     ( model
-                    , Ports.failure (Json.Encode.string ("Couldn't find a request with ID: " ++ String.fromInt id))
+                    , Ports.failure (Json.Encode.string "Unexpected response from the database.")
                     )
 
 

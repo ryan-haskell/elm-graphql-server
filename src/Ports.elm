@@ -9,7 +9,7 @@ port success : Json.Decode.Value -> Cmd msg
 port failure : Json.Decode.Value -> Cmd msg
 
 
-port databaseOut : { id : Int, sql : String } -> Cmd msg
+port databaseOut : { sql : String } -> Cmd msg
 
 
-port databaseIn : ({ id : Int, response : Json.Decode.Value } -> msg) -> Sub msg
+port databaseIn : ({ response : Json.Decode.Value } -> msg) -> Sub msg

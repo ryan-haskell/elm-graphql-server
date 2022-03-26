@@ -67,12 +67,12 @@ const fieldHandler = (objectName) => ({
       return new Promise((resolve, reject) => {
         worker.ports.success.subscribe(resolve)
         worker.ports.failure.subscribe((json) => reject(Error(json)))
-        worker.ports.databaseOut.subscribe(async ({ id, sql }) => {
+        worker.ports.databaseOut.subscribe(async ({ sql }) => {
           console.log(`\n\n💾 ${sql}\n`)
           let response = await context.db.all(sql)
           console.table(response)
 
-          worker.ports.databaseIn.send({ id, response })
+          worker.ports.databaseIn.send({ response })
         })
       })
     }
