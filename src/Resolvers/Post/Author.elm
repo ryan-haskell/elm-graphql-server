@@ -59,6 +59,8 @@ fetchUserAuthoredPostEdges posts =
     Table.UserAuthoredPost.findAll
         { select = Schema.UserAuthoredPost.selectAll
         , limit = Nothing
+        , offset = Nothing
+        , orderBy = Nothing
         , where_ = Just (Table.UserAuthoredPost.Where.PostId.in_ (List.map Schema.Post.id posts))
         }
         |> GraphQL.Response.fromDatabaseQuery
@@ -69,6 +71,8 @@ fetchAuthorsFor posts edges =
     Table.Users.findAll
         { select = Schema.User.selectAll
         , limit = Nothing
+        , offset = Nothing
+        , orderBy = Nothing
         , where_ = Just (Table.Users.Where.Id.in_ (List.map .userId edges))
         }
         |> GraphQL.Response.fromDatabaseQuery

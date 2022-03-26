@@ -1,5 +1,6 @@
 module Database.Query exposing (Query, deleteOne, findAll, findOne, insertOne, toDecoder, toSql, updateOne)
 
+import Database.Order
 import Database.Select
 import Database.Value
 import Database.Where
@@ -9,9 +10,12 @@ import Json.Decode
 type Query column value
     = Select
         { tableName : String
-        , where_ : Maybe (Database.Where.Clause column)
+        , toColumnName : column -> String
         , select : Database.Select.Decoder column value
+        , where_ : Maybe (Database.Where.Clause column)
+        , orderBy : Maybe (Database.Order.Order column)
         , limit : Maybe Int
+        , offset : Maybe Int
         }
     | Insert
         { tableName : String
@@ -36,36 +40,46 @@ type Query column value
 
 findOne :
     { tableName : String
+    , toColumnName : column -> String
     }
     ->
-        { where_ : Maybe (Database.Where.Clause column)
-        , select : Database.Select.Decoder column value
+        { select : Database.Select.Decoder column value
+        , where_ : Maybe (Database.Where.Clause column)
         }
     -> Query column (Maybe value)
 findOne config options =
     Select
         { tableName = config.tableName
+        , toColumnName = config.toColumnName
         , where_ = options.where_
         , select = Database.Select.mapDecoder grabFirstMaybeItemInList options.select
         , limit = Just 1
+        , offset = Nothing
+        , orderBy = Nothing
         }
 
 
 findAll :
     { tableName : String
+    , toColumnName : column -> String
     }
     ->
         { select : Database.Select.Decoder column value
         , where_ : Maybe (Database.Where.Clause column)
+        , orderBy : Maybe (Database.Order.Order column)
         , limit : Maybe Int
+        , offset : Maybe Int
         }
     -> Query column (List value)
 findAll config options =
     Select
         { tableName = config.tableName
+        , toColumnName = config.toColumnName
         , where_ = options.where_
         , select = Database.Select.mapDecoder Json.Decode.list options.select
         , limit = options.limit
+        , offset = options.offset
+        , orderBy = options.orderBy
         }
 
 
@@ -130,28 +144,39 @@ toSql query =
     case query of
         Select options ->
             let
-                template : String
-                template =
-                    case ( options.where_, options.limit ) of
-                        ( Just whereClause, Just limit ) ->
-                            "SELECT {{select}} FROM {{tableName}} WHERE {{whereClause}} LIMIT {{limit}}"
-                                |> String.replace "{{whereClause}}" (Database.Where.toSql whereClause)
-                                |> String.replace "{{limit}}" (String.fromInt limit)
+                selectSql : String
+                selectSql =
+                    "SELECT " ++ Database.Select.toSql options.select
 
-                        ( Nothing, Just limit ) ->
-                            "SELECT {{select}} FROM {{tableName}} LIMIT {{limit}}"
-                                |> String.replace "{{limit}}" (String.fromInt limit)
+                fromSql : String
+                fromSql =
+                    "FROM " ++ options.tableName
 
-                        ( Just whereClause, Nothing ) ->
-                            "SELECT {{select}} FROM {{tableName}} WHERE {{whereClause}}"
-                                |> String.replace "{{whereClause}}" (Database.Where.toSql whereClause)
+                toOrderBySql : Database.Order.Order column -> String
+                toOrderBySql =
+                    Database.Order.toSql options.toColumnName
 
-                        ( Nothing, Nothing ) ->
-                            "SELECT {{select}} FROM {{tableName}}"
+                toWhereSql : Database.Where.Clause column -> String
+                toWhereSql where_ =
+                    "WHERE " ++ Database.Where.toSql where_
+
+                toLimitSql : Int -> String
+                toLimitSql limit =
+                    "LIMIT " ++ String.fromInt limit
+
+                toOffsetSql : Int -> String
+                toOffsetSql offset =
+                    "OFFSET " ++ String.fromInt offset
             in
-            template
-                |> String.replace "{{tableName}}" options.tableName
-                |> String.replace "{{select}}" (Database.Select.toSql options.select)
+            List.filterMap identity
+                [ Just selectSql
+                , Just fromSql
+                , Maybe.map toWhereSql options.where_
+                , Maybe.map toOrderBySql options.orderBy
+                , Maybe.map toLimitSql options.limit
+                , Maybe.map toOffsetSql options.offset
+                ]
+                |> String.join " "
 
         Insert options ->
             if List.isEmpty options.values then

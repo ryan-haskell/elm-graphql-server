@@ -15,6 +15,8 @@ resolver info _ args =
             Table.Users.findAll
                 { where_ = Nothing
                 , limit = Just 25
+                , offset = Nothing
+                , orderBy = Nothing
                 , select = Schema.User.selectAll
                 }
                 |> GraphQL.Response.fromDatabaseQuery

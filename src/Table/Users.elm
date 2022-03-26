@@ -16,6 +16,7 @@ module Table.Users exposing
 
 -}
 
+import Database.Order
 import Database.Query
 import Database.Where
 import Table.Users.Column
@@ -44,6 +45,7 @@ findOne :
 findOne =
     Database.Query.findOne
         { tableName = tableName
+        , toColumnName = Table.Users.Column.toColumnName
         }
 
 
@@ -51,11 +53,14 @@ findAll :
     { where_ : Maybe (Database.Where.Clause Column)
     , select : Table.Users.Select.Decoder value
     , limit : Maybe Int
+    , offset : Maybe Int
+    , orderBy : Maybe (Database.Order.Order Column)
     }
     -> Query (List value)
 findAll =
     Database.Query.findAll
         { tableName = tableName
+        , toColumnName = Table.Users.Column.toColumnName
         }
 
 

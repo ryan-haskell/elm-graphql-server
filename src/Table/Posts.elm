@@ -16,6 +16,7 @@ module Table.Posts exposing
 
 -}
 
+import Database.Order
 import Database.Query
 import Database.Where
 import Table.Posts.Column
@@ -37,25 +38,29 @@ tableName =
 
 
 findOne :
-    { where_ : Maybe (Database.Where.Clause Column)
-    , select : Table.Posts.Select.Decoder value
+    { select : Table.Posts.Select.Decoder value
+    , where_ : Maybe (Database.Where.Clause Column)
     }
     -> Query (Maybe value)
 findOne =
     Database.Query.findOne
         { tableName = tableName
+        , toColumnName = Table.Posts.Column.toColumnName
         }
 
 
 findAll :
-    { where_ : Maybe (Database.Where.Clause Column)
-    , select : Table.Posts.Select.Decoder value
+    { select : Table.Posts.Select.Decoder value
+    , where_ : Maybe (Database.Where.Clause Column)
+    , orderBy : Maybe (Database.Order.Order Column)
     , limit : Maybe Int
+    , offset : Maybe Int
     }
     -> Query (List value)
 findAll =
     Database.Query.findAll
         { tableName = tableName
+        , toColumnName = Table.Posts.Column.toColumnName
         }
 
 

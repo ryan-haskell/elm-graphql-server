@@ -1,5 +1,6 @@
 module Resolvers.Query.Posts exposing (resolver)
 
+import Database.Order
 import GraphQL.Info exposing (Info)
 import GraphQL.Response exposing (Response)
 import Resolvers.Post.Author
@@ -7,6 +8,7 @@ import Schema.Post exposing (Post)
 import Schema.User exposing (User)
 import Schema.UserAuthoredPost exposing (UserAuthoredPost)
 import Table.Posts
+import Table.Posts.Column
 import Table.Posts.Select
 import Table.UserAuthoredPost
 import Table.UserAuthoredPost.Where.Id
@@ -24,9 +26,11 @@ resolver info _ args =
         postsQuery : Response (List Post)
         postsQuery =
             Table.Posts.findAll
-                { where_ = Nothing
+                { select = Schema.Post.selectAll
+                , where_ = Nothing
+                , orderBy = Just (Database.Order.descending Table.Posts.Column.createdAt)
                 , limit = Just 25
-                , select = Schema.Post.selectAll
+                , offset = Nothing
                 }
                 |> GraphQL.Response.fromDatabaseQuery
     in
