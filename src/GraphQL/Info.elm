@@ -1,6 +1,7 @@
-module GraphQL.Info exposing (Info, fromJson, hasSelection)
+module GraphQL.Info exposing (Info, fromJson, hasSelection, toPathId)
 
 import Json.Decode
+import Json.Encode
 
 
 type Info
@@ -8,7 +9,9 @@ type Info
 
 
 type alias Internals =
-    { selections : List String
+    { pathId : String -- Example "posts.author"
+    , uniquePathId : String -- Example "posts.[0].author"
+    , selections : List String
     }
 
 
@@ -24,7 +27,11 @@ fromJson fieldName json =
 
 fallback : Info
 fallback =
-    Info { selections = [] }
+    Info
+        { pathId = ""
+        , uniquePathId = ""
+        , selections = []
+        }
 
 
 decoder : Json.Decode.Decoder Info
@@ -42,7 +49,9 @@ internalDecoder =
                     (Json.Decode.at [ "name", "value" ] Json.Decode.string)
                 )
     in
-    Json.Decode.map Internals
+    Json.Decode.map3 Internals
+        (Json.Decode.field "path" pathDecoder |> Json.Decode.map toGeneralPathId)
+        (Json.Decode.field "path" pathDecoder |> Json.Decode.map toUniquePathId)
         (Json.Decode.field "fieldNodes"
             (Json.Decode.map List.concat
                 (Json.Decode.oneOf
@@ -52,6 +61,63 @@ internalDecoder =
                 )
             )
         )
+
+
+type PathSegment
+    = Index Int
+    | Field String
+
+
+pathSegmentDecoder : Json.Decode.Decoder PathSegment
+pathSegmentDecoder =
+    Json.Decode.oneOf
+        [ Json.Decode.map Index Json.Decode.int
+        , Json.Decode.map Field Json.Decode.string
+        ]
+
+
+pathDecoder : Json.Decode.Decoder (List PathSegment)
+pathDecoder =
+    Json.Decode.map2 (\key pathSoFar -> pathSoFar ++ [ key ])
+        (Json.Decode.field "key" pathSegmentDecoder)
+        (Json.Decode.oneOf
+            [ Json.Decode.field "prev"
+                (Json.Decode.lazy
+                    (\_ -> pathDecoder)
+                )
+            , Json.Decode.succeed []
+            ]
+        )
+
+
+toUniquePathId : List PathSegment -> String
+toUniquePathId segments =
+    List.map
+        (\segment ->
+            case segment of
+                Index int ->
+                    "[0]"
+
+                Field name ->
+                    name
+        )
+        segments
+        |> String.join "."
+
+
+toGeneralPathId : List PathSegment -> String
+toGeneralPathId segments =
+    List.filterMap
+        (\segment ->
+            case segment of
+                Index int ->
+                    Nothing
+
+                Field name ->
+                    Just name
+        )
+        segments
+        |> String.join "."
 
 
 {-| Check if this request includes a selected field
@@ -76,3 +142,8 @@ internalDecoder =
 hasSelection : String -> Info -> Bool
 hasSelection field (Info info) =
     List.member field info.selections
+
+
+toPathId : Info -> String
+toPathId (Info info) =
+    info.pathId

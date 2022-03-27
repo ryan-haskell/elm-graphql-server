@@ -1,4 +1,12 @@
-port module Ports exposing (databaseIn, databaseOut, failure, runResolver, success)
+port module Ports exposing
+    ( batchIn
+    , batchRequestOut
+    , databaseIn
+    , databaseOut
+    , failure
+    , runResolver
+    , success
+    )
 
 import Json.Decode
 import Json.Encode
@@ -30,6 +38,24 @@ failure options =
         }
 
 
+batchRequestOut :
+    { request : Json.Decode.Value
+    , id : Int
+    , pathId : String
+    }
+    -> Cmd msg
+batchRequestOut options =
+    outgoing
+        { tag = "BATCH_OUT"
+        , request = options.request
+        , payload =
+            Json.Encode.object
+                [ ( "id", Json.Encode.int options.id )
+                , ( "pathId", Json.Encode.string options.pathId )
+                ]
+        }
+
+
 databaseOut :
     { request : Json.Decode.Value
     , sql : String
@@ -46,6 +72,16 @@ databaseOut options =
 port databaseIn :
     ({ request : Json.Decode.Value
      , response : Json.Decode.Value
+     }
+     -> msg
+    )
+    -> Sub msg
+
+
+port batchIn :
+    ({ request : Json.Decode.Value
+     , pathId : String
+     , ids : List Int
      }
      -> msg
     )

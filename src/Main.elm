@@ -1,8 +1,9 @@
 module Main exposing (main)
 
-import AssocList exposing (Dict)
+import AssocList
+import Dict exposing (Dict)
 import GraphQL.Context
-import GraphQL.Info
+import GraphQL.Info exposing (Info)
 import GraphQL.Response exposing (Response)
 import Json.Decode
 import Json.Encode
@@ -48,13 +49,16 @@ main =
 
 
 type alias Model =
-    { onResponse : Dict Json.Decode.Value (Json.Decode.Value -> Cmd Msg)
+    { batchResponseDict : Dict String (List Int -> Cmd Msg)
+    , databaseResponseDict : AssocList.Dict Json.Decode.Value (Json.Decode.Value -> Cmd Msg)
     }
 
 
 init : Json.Decode.Value -> ( Model, Cmd Msg )
 init flags =
-    ( { onResponse = AssocList.empty }
+    ( { batchResponseDict = Dict.empty
+      , databaseResponseDict = AssocList.empty
+      }
     , Cmd.none
     )
 
@@ -121,7 +125,7 @@ runResolver request =
                 { request = request
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Json.Decode.succeed ()
-                , resolver = Resolvers.Query.Posts.resolver info
+                , resolver = Resolvers.Query.Posts.resolver
                 , toJson = Json.Encode.list Schema.Post.encode
                 }
 
@@ -256,7 +260,7 @@ runResolver request =
                 { request = request
                 , parentDecoder = Schema.Post.decoder
                 , argsDecoder = Json.Decode.succeed ()
-                , resolver = Resolvers.Post.Author.resolver
+                , resolver = Resolvers.Post.Author.resolver info
                 , toJson = Json.Encode.Extra.maybe Schema.User.encode
                 }
 
@@ -308,7 +312,8 @@ createResolver options =
                                 { request = options.request
                                 , reason = reason
                                 }
-                    , onDatabaseQuery = ResolverSentDatabaseQuery options.request
+                    , onDatabaseQuery = ElmSentDatabaseQuery options.request
+                    , onBatchQuery = ElmSentBatchRequest options.request
                     }
 
         Err _ ->
@@ -323,14 +328,25 @@ createResolver options =
 
 
 type Msg
-    = ResolverSentDatabaseQuery
+    = ElmSentDatabaseQuery
         Json.Decode.Value
         { sql : String
         , onResponse : Json.Decode.Value -> Cmd Msg
         }
+    | ElmSentBatchRequest
+        Json.Decode.Value
+        { id : Int
+        , info : Info
+        , onResponse : List Int -> Cmd Msg
+        }
     | JavascriptSentDatabaseResponse
         { request : Json.Decode.Value
         , response : Json.Decode.Value
+        }
+    | JavascriptSentBatchResponse
+        { request : Json.Decode.Value
+        , pathId : String
+        , ids : List Int
         }
     | JavascriptRequestedResolver
         { request : Json.Decode.Value
@@ -340,11 +356,21 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        ResolverSentDatabaseQuery request options ->
-            ( { model | onResponse = AssocList.insert request options.onResponse model.onResponse }
+        -- case Debug.log "msg" msg of
+        ElmSentDatabaseQuery request options ->
+            ( { model | databaseResponseDict = AssocList.insert request options.onResponse model.databaseResponseDict }
             , Ports.databaseOut
                 { request = request
                 , sql = options.sql
+                }
+            )
+
+        ElmSentBatchRequest request options ->
+            ( { model | batchResponseDict = Dict.insert (GraphQL.Info.toPathId options.info) options.onResponse model.batchResponseDict }
+            , Ports.batchRequestOut
+                { request = request
+                , id = options.id
+                , pathId = GraphQL.Info.toPathId options.info
                 }
             )
 
@@ -354,9 +380,9 @@ update msg model =
             )
 
         JavascriptSentDatabaseResponse { request, response } ->
-            case AssocList.get request model.onResponse of
+            case AssocList.get request model.databaseResponseDict of
                 Just onResponse ->
-                    ( { model | onResponse = AssocList.remove request model.onResponse }
+                    ( { model | databaseResponseDict = AssocList.remove request model.databaseResponseDict }
                     , onResponse response
                     )
 
@@ -364,7 +390,22 @@ update msg model =
                     ( model
                     , Ports.failure
                         { request = request
-                        , reason = "Unexpected response from the database."
+                        , reason = "Unexpected database response from JavaScript."
+                        }
+                    )
+
+        JavascriptSentBatchResponse { request, pathId, ids } ->
+            case Dict.get pathId model.batchResponseDict of
+                Just onResponse ->
+                    ( { model | batchResponseDict = Dict.remove pathId model.batchResponseDict }
+                    , onResponse ids
+                    )
+
+                Nothing ->
+                    ( model
+                    , Ports.failure
+                        { request = request
+                        , reason = "Unexpected batch response from JavaScript."
                         }
                     )
 
@@ -377,5 +418,6 @@ subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
         [ Ports.databaseIn JavascriptSentDatabaseResponse
+        , Ports.batchIn JavascriptSentBatchResponse
         , Ports.runResolver JavascriptRequestedResolver
         ]

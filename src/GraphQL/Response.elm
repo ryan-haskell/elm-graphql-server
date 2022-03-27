@@ -4,6 +4,7 @@ module GraphQL.Response exposing
     , fromDatabaseQuery
     , map, andThen
     , toCmd
+    , batch
     )
 
 {-|
@@ -18,50 +19,30 @@ module GraphQL.Response exposing
 -}
 
 import Database.Query
+import GraphQL.Info exposing (Info)
 import Json.Decode
 import Json.Encode
+import List.Extra
 import Task exposing (Task)
 
 
 type Response value
     = Success value
     | Failure String
+    | Batch
+        { id : Int
+        , info : Info
+        , toBatchResponse : List Int -> Response (List value)
+        , fromListToItem : List Int -> List value -> value
+        }
     | Query
         { sql : String
         , onResponse : Json.Decode.Value -> Response value
         }
 
 
-map : (a -> b) -> Response a -> Response b
-map fn response =
-    case response of
-        Success value ->
-            Success (fn value)
 
-        Failure reason ->
-            Failure reason
-
-        Query data ->
-            Query
-                { sql = data.sql
-                , onResponse = \json -> map fn (data.onResponse json)
-                }
-
-
-andThen : (a -> Response b) -> Response a -> Response b
-andThen toResponse response =
-    case response of
-        Success value ->
-            toResponse value
-
-        Failure reason ->
-            Failure reason
-
-        Query data ->
-            Query
-                { sql = data.sql
-                , onResponse = \json -> andThen toResponse (data.onResponse json)
-                }
+-- CREATING A RESPONSE
 
 
 ok : value -> Response value
@@ -72,6 +53,32 @@ ok value =
 err : String -> Response value
 err reason =
     Failure reason
+
+
+batch :
+    { id : Int
+    , info : Info
+    , toBatchResponse : List Int -> Response (List (Maybe value))
+    }
+    -> Response (Maybe value)
+batch options =
+    let
+        fromListToItem : List Int -> List (Maybe value) -> Maybe value
+        fromListToItem ids maybeValues =
+            case List.Extra.findIndex (\id -> id == options.id) ids of
+                Just index ->
+                    List.Extra.getAt index maybeValues
+                        |> Maybe.andThen identity
+
+                Nothing ->
+                    Nothing
+    in
+    Batch
+        { id = options.id
+        , info = options.info
+        , toBatchResponse = options.toBatchResponse
+        , fromListToItem = fromListToItem
+        }
 
 
 fromDatabaseQuery : Database.Query.Query column value -> Response value
@@ -89,15 +96,50 @@ fromDatabaseQuery query =
         }
 
 
+
+-- FUNCTIONS
+
+
+map : (a -> b) -> Response a -> Response b
+map fn response =
+    case response of
+        Success value ->
+            Success (fn value)
+
+        Failure reason ->
+            Failure reason
+
+        Query data ->
+            Query
+                { sql = data.sql
+                , onResponse = \json -> map fn (data.onResponse json)
+                }
+
+        Batch _ ->
+            Debug.todo "batch map"
+
+
+andThen : (a -> Response b) -> Response a -> Response b
+andThen toResponse response =
+    case response of
+        Success value ->
+            toResponse value
+
+        Failure reason ->
+            Failure reason
+
+        Query data ->
+            Query
+                { sql = data.sql
+                , onResponse = \json -> andThen toResponse (data.onResponse json)
+                }
+
+        Batch _ ->
+            Debug.todo "batch andThen"
+
+
 toCmd :
-    { onSuccess : value -> Cmd msg
-    , onFailure : String -> Cmd msg
-    , onDatabaseQuery :
-        { sql : String
-        , onResponse : Json.Decode.Value -> Cmd msg
-        }
-        -> msg
-    }
+    Options value msg
     -> Response value
     -> Cmd msg
 toCmd options response =
@@ -116,7 +158,49 @@ toCmd options response =
                     }
                 )
 
+        Batch query ->
+            let
+                onResponse : List Int -> Cmd msg
+                onResponse ints =
+                    query.toBatchResponse ints
+                        |> map (query.fromListToItem ints)
+                        |> toCmd options
+            in
+            sendMessage
+                (options.onBatchQuery
+                    { id = query.id
+                    , info = query.info
+                    , onResponse = onResponse
+                    }
+                )
+
 
 sendMessage : msg -> Cmd msg
 sendMessage msg =
     Task.succeed msg |> Task.perform identity
+
+
+type alias Options value msg =
+    { onSuccess : value -> Cmd msg
+    , onFailure : String -> Cmd msg
+    , onDatabaseQuery :
+        { sql : String
+        , onResponse : Json.Decode.Value -> Cmd msg
+        }
+        -> msg
+    , onBatchQuery :
+        { id : Int
+        , info : Info
+        , onResponse : List Int -> Cmd msg
+        }
+        -> msg
+    }
+
+
+mapOptions : (b -> a) -> Options a msg -> Options b msg
+mapOptions fn options =
+    { onSuccess = \b -> options.onSuccess (fn b)
+    , onFailure = options.onFailure
+    , onDatabaseQuery = options.onDatabaseQuery
+    , onBatchQuery = options.onBatchQuery
+    }

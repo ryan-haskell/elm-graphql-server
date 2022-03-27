@@ -7,6 +7,7 @@ const { ApolloServerPluginLandingPageGraphQLPlayground } = require("apollo-serve
 // so we cannot use the standard `sqlite3` NPM package (it's still on 3.34.0)
 const sqlite3 = require('@louislam/sqlite3')
 const { open } = require('sqlite')
+const { nextTick } = require("process")
 
 const Database = {
   start: async () => {
@@ -50,17 +51,19 @@ const silent = (fn) => {
 }
 const { Elm } = silent(() => require("../dist/elm.worker"))
 
-// Import schema.gql
-const typeDefs = fs.readFileSync(path.join(__dirname, "schema.gql"), {
-  encoding: "utf8",
-})
+// Import GraphQL schema from file
+const typeDefs = fs.readFileSync(
+  path.join(__dirname, "schema.gql"),
+  { encoding: "utf8" }
+)
 
 
-// Define dynamic resolvers, using a JS object proxy
+// GraphQL resolvers are dynamically generated
 const fieldHandler = (objectName) => ({
   get (_, fieldName) {
     if (fieldName === "__isTypeOf") return () => objectName
     return (parent, args, context, info) => {
+      // console.log(info.path)
       const request = { objectName, fieldName, parent, args, context, info }
 
       context.worker.ports.runResolver.send({ request })
@@ -75,6 +78,26 @@ const fieldHandler = (objectName) => ({
             console.table(response)
     
             context.worker.ports.databaseIn.send({ request, response })
+          },
+          BATCH_OUT: async ({ id, pathId }) => {
+            if (context.batchRequestIds[pathId] === undefined) {
+              context.batchRequestIds[pathId] = []
+
+              setTimeout(() => {
+                console.log('Sending batch IDs for: ', context.batchRequestIds[pathId])
+
+                context.worker.ports.batchIn.send({
+                  request,
+                  pathId,
+                  ids: context.batchRequestIds[pathId]
+                })
+              }, 300) // TODO: Find a smarter way to handle this
+            }
+
+            context.batchRequestIds[pathId].push(id)
+
+            console.log(context.batchRequestIds[pathId])
+            
           }
         }
 
@@ -116,6 +139,8 @@ const start = async () => {
     context: ({ req }) => ({
       // Each GraphQL request gets it's own Elm program
       worker: Elm.Main.init(),
+      // Allows us to prevent the N+1 problem, and batch similar requests
+      batchRequestIds: {},
       currentUserId: req.header('Authorization'),
       db
     }),
