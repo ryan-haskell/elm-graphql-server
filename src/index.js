@@ -89,15 +89,22 @@ const fieldHandler = (objectName) => ({
           SUCCESS: (value) => resolve(value),
           FAILURE: (reason) => reject(Error(reason)),
           DATABASE_OUT: async (sql) => {
-              console.log(`\n\n💾 ${sql}\n`)
-              let response = await context.db.all(sql)
-              console.table(response)
-      
-              worker.ports.databaseIn.send({ request, response })
+            console.log(`\n\n💾 ${sql}\n`)
+            let response = await context.db.all(sql)
+            console.table(response)
+    
+            worker.ports.databaseIn.send({ request, response })
           }
         }
 
         worker.ports.outgoing.subscribe(msg => {
+          // This conditional is critical for our resolver to work,
+          // because it ignores any Elm messages from other resolvers
+          // 
+          // WARNING: JS uses object references for equality. If anything
+          // freaky starts to happen– we should change this code to use
+          // something like an Integer ID, rather than comparing the full
+          // JSON request objects.
           if (msg.request === request) {
             const handler = handlers[msg.tag]
             if (handler) {
