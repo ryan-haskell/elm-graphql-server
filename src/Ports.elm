@@ -1,15 +1,60 @@
 port module Ports exposing (databaseIn, databaseOut, failure, success)
 
 import Json.Decode
+import Json.Encode
 
 
-port success : Json.Decode.Value -> Cmd msg
+success :
+    { request : Json.Decode.Value
+    , value : Json.Decode.Value
+    }
+    -> Cmd msg
+success options =
+    outgoing
+        { tag = "SUCCESS"
+        , request = options.request
+        , payload = options.value
+        }
 
 
-port failure : Json.Decode.Value -> Cmd msg
+failure :
+    { request : Json.Decode.Value
+    , reason : String
+    }
+    -> Cmd msg
+failure options =
+    outgoing
+        { tag = "FAILURE"
+        , request = options.request
+        , payload = Json.Encode.string options.reason
+        }
 
 
-port databaseOut : { sql : String } -> Cmd msg
+databaseOut :
+    { request : Json.Decode.Value
+    , sql : String
+    }
+    -> Cmd msg
+databaseOut options =
+    outgoing
+        { tag = "DATABASE_OUT"
+        , request = options.request
+        , payload = Json.Encode.string options.sql
+        }
 
 
-port databaseIn : ({ response : Json.Decode.Value } -> msg) -> Sub msg
+port databaseIn :
+    ({ request : Json.Decode.Value
+     , response : Json.Decode.Value
+     }
+     -> msg
+    )
+    -> Sub msg
+
+
+port outgoing :
+    { request : Json.Decode.Value
+    , tag : String
+    , payload : Json.Decode.Value
+    }
+    -> Cmd msg

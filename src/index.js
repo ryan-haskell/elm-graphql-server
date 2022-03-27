@@ -21,13 +21,13 @@ const Database = {
       console.log(`💾 Making sure SQL database is up-to-date...`)
       let migrationsBefore = 0
       try {
-        let before = await db.get(`SELECT count(*) as count FROM migrations`)
+        const before = await db.get(`SELECT count(*) as count FROM migrations`)
         migrationsBefore = before.count
       } catch {}
       await db.migrate()
-      let { count: migrationsAfter } = await db.get(`SELECT count(*) as count FROM migrations`)
+      const { count: migrationsAfter } = await db.get(`SELECT count(*) as count FROM migrations`)
 
-      let newMigrationsRun = migrationsAfter - migrationsBefore
+      const newMigrationsRun = migrationsAfter - migrationsBefore
       if (newMigrationsRun === 1) {
         console.info(`💾 Ran ${newMigrationsRun} migration!`)
       } else if (newMigrationsRun > 1) {
@@ -42,9 +42,9 @@ const Database = {
 // Silent temporarily mutes console.warn
 // to hide Elm's "DEV MODE" warnings on import
 const silent = (fn) => {
-  let warn = console.warn
+  const warn = console.warn
   console.warn = () => undefined
-  let value = fn()
+  const value = fn()
   console.warn = warn
   return value
 }
@@ -60,19 +60,31 @@ const fieldHandler = (objectName) => ({
   get (target, fieldName, receiver) {
     if (fieldName === "__isTypeOf") return () => objectName
     return (parent, args, context, info) => {
-      let worker = Elm.Main.init({
-        flags: { objectName, fieldName, parent, args, context, info },
-      })
-
+      const request = { objectName, fieldName, parent, args, context, info }
+      const worker = Elm.Main.init({ flags: request })
+      
       return new Promise((resolve, reject) => {
-        worker.ports.success.subscribe(resolve)
-        worker.ports.failure.subscribe((json) => reject(Error(json)))
-        worker.ports.databaseOut.subscribe(async ({ sql }) => {
-          console.log(`\n\n💾 ${sql}\n`)
-          let response = await context.db.all(sql)
-          console.table(response)
+        const handlers = {
+          SUCCESS: (value) => resolve(value),
+          FAILURE: (reason) => reject(reason),
+          DATABASE_OUT: async (sql) => {
+              console.log(`\n\n💾 ${sql}\n`)
+              let response = await context.db.all(sql)
+              console.table(response)
+      
+              worker.ports.databaseIn.send({ request, response })
+          }
+        }
 
-          worker.ports.databaseIn.send({ response })
+        worker.ports.outgoing.subscribe(msg => {
+          if (msg.request === request) {
+            const handler = handlers[msg.tag]
+            if (handler) {
+              handler(msg.payload)
+            } else {
+              console.warn(`❗️ Unrecognized port tag: ${msg.tag}`)
+            }
+          }
         })
       })
     }
@@ -88,7 +100,7 @@ const resolvers = new Proxy({}, {
 // The function to run when the server starts up
 const start = async () => {
   // Start up sqlite database
-  let db = await Database.start()
+  const db = await Database.start()
 
   // Start GraphQL server
   const server = new ApolloServer({

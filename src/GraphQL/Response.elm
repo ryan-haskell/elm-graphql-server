@@ -91,7 +91,7 @@ fromDatabaseQuery query =
 
 toCmd :
     { onSuccess : value -> Cmd msg
-    , onFailure : Json.Decode.Value -> Cmd msg
+    , onFailure : String -> Cmd msg
     , onDatabaseQuery :
         { sql : String
         , onResponse : Json.Decode.Value -> Cmd msg
@@ -106,7 +106,7 @@ toCmd options response =
             options.onSuccess value
 
         Failure reason ->
-            options.onFailure (Json.Encode.string reason)
+            options.onFailure reason
 
         Query query ->
             sendMessage

@@ -54,6 +54,13 @@ type alias Model =
 
 init : Json.Decode.Value -> ( Model, Cmd Msg )
 init flags =
+    ( { onResponse = Nothing }
+    , runResolver flags
+    )
+
+
+runResolver : Json.Decode.Value -> Cmd Msg
+runResolver request =
     let
         objectAndFieldResult : Result Json.Decode.Error ( String, String )
         objectAndFieldResult =
@@ -62,21 +69,20 @@ init flags =
                     (Json.Decode.field "objectName" Json.Decode.string)
                     (Json.Decode.field "fieldName" Json.Decode.string)
                 )
-                flags
+                request
 
         context : GraphQL.Context.Context
         context =
-            GraphQL.Context.fromJson "context" flags
+            GraphQL.Context.fromJson "context" request
 
         info : GraphQL.Info.Info
         info =
-            GraphQL.Info.fromJson "info" flags
+            GraphQL.Info.fromJson "info" request
     in
-    ( { onResponse = Nothing }
-    , case objectAndFieldResult of
+    case objectAndFieldResult of
         Ok ( "Query", "hello" ) ->
             createResolver
-                { flags = flags
+                { request = request
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Query.Hello.argumentDecoder
                 , resolver = Resolvers.Query.Hello.resolver
@@ -85,7 +91,7 @@ init flags =
 
         Ok ( "Query", "user" ) ->
             createResolver
-                { flags = flags
+                { request = request
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Query.User.argumentsDecoder
                 , resolver = Resolvers.Query.User.resolver info
@@ -94,7 +100,7 @@ init flags =
 
         Ok ( "Query", "users" ) ->
             createResolver
-                { flags = flags
+                { request = request
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Query.Users.resolver info
@@ -103,7 +109,7 @@ init flags =
 
         Ok ( "Query", "post" ) ->
             createResolver
-                { flags = flags
+                { request = request
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Query.Post.argumentsDecoder
                 , resolver = Resolvers.Query.Post.resolver info
@@ -112,7 +118,7 @@ init flags =
 
         Ok ( "Query", "posts" ) ->
             createResolver
-                { flags = flags
+                { request = request
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Query.Posts.resolver info
@@ -121,7 +127,7 @@ init flags =
 
         Ok ( "Mutation", "createPost" ) ->
             createResolver
-                { flags = flags
+                { request = request
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.CreatePost.argumentsDecoder
                 , resolver = Resolvers.Mutation.CreatePost.resolver info context
@@ -130,7 +136,7 @@ init flags =
 
         Ok ( "Mutation", "updatePost" ) ->
             createResolver
-                { flags = flags
+                { request = request
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.UpdatePost.argumentsDecoder
                 , resolver = Resolvers.Mutation.UpdatePost.resolver info
@@ -139,7 +145,7 @@ init flags =
 
         Ok ( "Mutation", "deletePost" ) ->
             createResolver
-                { flags = flags
+                { request = request
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.DeletePost.argumentsDecoder
                 , resolver = Resolvers.Mutation.DeletePost.resolver info
@@ -148,7 +154,7 @@ init flags =
 
         Ok ( "Mutation", "createUser" ) ->
             createResolver
-                { flags = flags
+                { request = request
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.CreateUser.argumentsDecoder
                 , resolver = Resolvers.Mutation.CreateUser.resolver info
@@ -157,7 +163,7 @@ init flags =
 
         Ok ( "Mutation", "updateUser" ) ->
             createResolver
-                { flags = flags
+                { request = request
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.UpdateUser.argumentsDecoder
                 , resolver = Resolvers.Mutation.UpdateUser.resolver info
@@ -166,7 +172,7 @@ init flags =
 
         Ok ( "Mutation", "deleteUser" ) ->
             createResolver
-                { flags = flags
+                { request = request
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.DeleteUser.argumentsDecoder
                 , resolver = Resolvers.Mutation.DeleteUser.resolver info
@@ -175,7 +181,7 @@ init flags =
 
         Ok ( "User", "id" ) ->
             createResolver
-                { flags = flags
+                { request = request
                 , parentDecoder = Schema.User.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.User.Id.resolver
@@ -184,7 +190,7 @@ init flags =
 
         Ok ( "User", "username" ) ->
             createResolver
-                { flags = flags
+                { request = request
                 , parentDecoder = Schema.User.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.User.Username.resolver
@@ -193,7 +199,7 @@ init flags =
 
         Ok ( "User", "avatarUrl" ) ->
             createResolver
-                { flags = flags
+                { request = request
                 , parentDecoder = Schema.User.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.User.AvatarUrl.resolver
@@ -202,7 +208,7 @@ init flags =
 
         Ok ( "User", "posts" ) ->
             createResolver
-                { flags = flags
+                { request = request
                 , parentDecoder = Schema.User.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.User.Posts.resolver
@@ -211,7 +217,7 @@ init flags =
 
         Ok ( "Post", "id" ) ->
             createResolver
-                { flags = flags
+                { request = request
                 , parentDecoder = Schema.Post.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Post.Id.resolver
@@ -220,7 +226,7 @@ init flags =
 
         Ok ( "Post", "imageUrls" ) ->
             createResolver
-                { flags = flags
+                { request = request
                 , parentDecoder = Schema.Post.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Post.ImageUrls.resolver
@@ -229,7 +235,7 @@ init flags =
 
         Ok ( "Post", "caption" ) ->
             createResolver
-                { flags = flags
+                { request = request
                 , parentDecoder = Schema.Post.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Post.Caption.resolver
@@ -238,7 +244,7 @@ init flags =
 
         Ok ( "Post", "createdAt" ) ->
             createResolver
-                { flags = flags
+                { request = request
                 , parentDecoder = Schema.Post.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Post.CreatedAt.resolver
@@ -247,7 +253,7 @@ init flags =
 
         Ok ( "Post", "author" ) ->
             createResolver
-                { flags = flags
+                { request = request
                 , parentDecoder = Schema.Post.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Post.Author.resolver
@@ -256,20 +262,22 @@ init flags =
 
         Ok ( objectName, fieldName ) ->
             Ports.failure
-                (Json.Encode.string
-                    ("Did not recognize {{objectName}}.{{fieldName}}"
+                { request = request
+                , reason =
+                    "Did not recognize {{objectName}}.{{fieldName}}"
                         |> String.replace "{{objectName}}" objectName
                         |> String.replace "{{fieldName}}" fieldName
-                    )
-                )
+                }
 
         Err _ ->
-            Ports.failure (Json.Encode.string "Field was not passed in.")
-    )
+            Ports.failure
+                { request = request
+                , reason = "Field was not passed in."
+                }
 
 
 createResolver :
-    { flags : Json.Decode.Value
+    { request : Json.Decode.Value
     , parentDecoder : Json.Decode.Decoder parent
     , argsDecoder : Json.Decode.Decoder args
     , resolver : parent -> args -> Response value
@@ -284,18 +292,30 @@ createResolver options =
                 (Json.Decode.field "parent" options.parentDecoder)
                 (Json.Decode.field "args" options.argsDecoder)
     in
-    case Json.Decode.decodeValue inputDecoder options.flags of
+    case Json.Decode.decodeValue inputDecoder options.request of
         Ok { parent, args } ->
             options.resolver parent args
                 |> GraphQL.Response.toCmd
-                    { onSuccess = options.toJson >> Ports.success
-                    , onFailure = Ports.failure
-                    , onDatabaseQuery = ResolverSentDatabaseQuery
+                    { onSuccess =
+                        \value ->
+                            Ports.success
+                                { request = options.request
+                                , value = options.toJson value
+                                }
+                    , onFailure =
+                        \reason ->
+                            Ports.failure
+                                { request = options.request
+                                , reason = reason
+                                }
+                    , onDatabaseQuery = ResolverSentDatabaseQuery options.request
                     }
 
         Err _ ->
-            Json.Encode.string "Failed to decode parent/args."
-                |> Ports.failure
+            Ports.failure
+                { request = options.request
+                , reason = "Failed to decode parent/args."
+                }
 
 
 
@@ -304,23 +324,28 @@ createResolver options =
 
 type Msg
     = ResolverSentDatabaseQuery
+        Json.Decode.Value
         { sql : String
         , onResponse : Json.Decode.Value -> Cmd Msg
         }
     | JavascriptSentDatabaseResponse
-        { response : Json.Decode.Value
+        { request : Json.Decode.Value
+        , response : Json.Decode.Value
         }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        ResolverSentDatabaseQuery options ->
+        ResolverSentDatabaseQuery request options ->
             ( { model | onResponse = Just options.onResponse }
-            , Ports.databaseOut { sql = options.sql }
+            , Ports.databaseOut
+                { request = request
+                , sql = options.sql
+                }
             )
 
-        JavascriptSentDatabaseResponse { response } ->
+        JavascriptSentDatabaseResponse { request, response } ->
             case model.onResponse of
                 Just onResponse ->
                     ( { model | onResponse = Nothing }
@@ -329,7 +354,10 @@ update msg model =
 
                 Nothing ->
                     ( model
-                    , Ports.failure (Json.Encode.string "Unexpected response from the database.")
+                    , Ports.failure
+                        { request = request
+                        , reason = "Unexpected response from the database."
+                        }
                     )
 
 
