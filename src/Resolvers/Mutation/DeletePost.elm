@@ -22,8 +22,8 @@ argumentsDecoder =
         (Json.Decode.field "id" Json.Decode.int)
 
 
-resolver : Info -> () -> Arguments -> GraphQL.Response.Response (Maybe Post)
-resolver info _ args =
+resolver : () -> Arguments -> GraphQL.Response.Response (Maybe Post)
+resolver _ args =
     Table.Posts.deleteOne
         { where_ = Just (Table.Posts.Where.Id.equals args.id)
         , returning = Schema.Post.selectAll

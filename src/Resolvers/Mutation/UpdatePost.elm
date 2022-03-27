@@ -27,8 +27,8 @@ argumentsDecoder =
         (Optional.decoder "caption" Json.Decode.string)
 
 
-resolver : Info -> () -> Arguments -> GraphQL.Response.Response (Maybe Post)
-resolver info _ args =
+resolver : () -> Arguments -> GraphQL.Response.Response (Maybe Post)
+resolver _ args =
     Table.Posts.updateOne
         { set =
             Optional.toList

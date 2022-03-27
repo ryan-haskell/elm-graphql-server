@@ -23,8 +23,8 @@ argumentsDecoder =
         (Json.Decode.field "id" Json.Decode.int)
 
 
-resolver : Info -> () -> Arguments -> Response (Maybe Post)
-resolver info parent args =
+resolver : () -> Arguments -> Response (Maybe Post)
+resolver parent args =
     Table.Posts.findOne
         { where_ = Just (Table.Posts.Where.Id.equals args.id)
         , select = Schema.Post.selectAll

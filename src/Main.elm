@@ -110,7 +110,7 @@ runResolver resolverId request =
                 , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Query.User.argumentsDecoder
-                , resolver = Resolvers.Query.User.resolver info
+                , resolver = Resolvers.Query.User.resolver
                 , toJson = Json.Encode.Extra.maybe Schema.User.encode
                 }
 
@@ -121,7 +121,7 @@ runResolver resolverId request =
                 , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Json.Decode.succeed ()
-                , resolver = Resolvers.Query.Users.resolver info
+                , resolver = Resolvers.Query.Users.resolver
                 , toJson = Json.Encode.list Schema.User.encode
                 }
 
@@ -132,7 +132,7 @@ runResolver resolverId request =
                 , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Query.Post.argumentsDecoder
-                , resolver = Resolvers.Query.Post.resolver info
+                , resolver = Resolvers.Query.Post.resolver
                 , toJson = Json.Encode.Extra.maybe Schema.Post.encode
                 }
 
@@ -154,7 +154,7 @@ runResolver resolverId request =
                 , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.CreatePost.argumentsDecoder
-                , resolver = Resolvers.Mutation.CreatePost.resolver info context
+                , resolver = Resolvers.Mutation.CreatePost.resolver context
                 , toJson = Schema.Post.encode
                 }
 
@@ -165,7 +165,7 @@ runResolver resolverId request =
                 , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.UpdatePost.argumentsDecoder
-                , resolver = Resolvers.Mutation.UpdatePost.resolver info
+                , resolver = Resolvers.Mutation.UpdatePost.resolver
                 , toJson = Json.Encode.Extra.maybe Schema.Post.encode
                 }
 
@@ -176,7 +176,7 @@ runResolver resolverId request =
                 , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.DeletePost.argumentsDecoder
-                , resolver = Resolvers.Mutation.DeletePost.resolver info
+                , resolver = Resolvers.Mutation.DeletePost.resolver
                 , toJson = Json.Encode.Extra.maybe Schema.Post.encode
                 }
 
@@ -187,7 +187,7 @@ runResolver resolverId request =
                 , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.CreateUser.argumentsDecoder
-                , resolver = Resolvers.Mutation.CreateUser.resolver info
+                , resolver = Resolvers.Mutation.CreateUser.resolver
                 , toJson = Schema.User.encode
                 }
 
@@ -198,7 +198,7 @@ runResolver resolverId request =
                 , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.UpdateUser.argumentsDecoder
-                , resolver = Resolvers.Mutation.UpdateUser.resolver info
+                , resolver = Resolvers.Mutation.UpdateUser.resolver
                 , toJson = Json.Encode.Extra.maybe Schema.User.encode
                 }
 
@@ -209,7 +209,7 @@ runResolver resolverId request =
                 , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.DeleteUser.argumentsDecoder
-                , resolver = Resolvers.Mutation.DeleteUser.resolver info
+                , resolver = Resolvers.Mutation.DeleteUser.resolver
                 , toJson = Json.Encode.Extra.maybe Schema.User.encode
                 }
 
@@ -253,7 +253,7 @@ runResolver resolverId request =
                 , info = info
                 , parentDecoder = Schema.User.decoder
                 , argsDecoder = Json.Decode.succeed ()
-                , resolver = Resolvers.User.Posts.resolver
+                , resolver = Resolvers.User.Posts.resolver info
                 , toJson = Json.Encode.list Schema.Post.encode
                 }
 

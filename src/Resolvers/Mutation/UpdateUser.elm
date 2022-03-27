@@ -27,24 +27,15 @@ argumentsDecoder =
         (Optional.decoder "avatarUrl" (Json.Decode.maybe Json.Decode.string))
 
 
-resolver : Info -> () -> Arguments -> GraphQL.Response.Response (Maybe User)
-resolver info _ args =
-    let
-        updateUser =
-            Table.Users.updateOne
-                { set =
-                    Optional.toList
-                        [ args.username |> Optional.map Table.Users.Value.username
-                        , args.avatarUrl |> Optional.map Table.Users.Value.avatarUrl
-                        ]
-                , where_ = Just (Table.Users.Where.Id.equals args.id)
-                , returning = Schema.User.selectAll
-                }
-                |> GraphQL.Response.fromDatabaseQuery
-    in
-    if GraphQL.Info.hasSelection "posts" info then
-        updateUser
-            |> GraphQL.Response.andThen Resolvers.User.Posts.includeForMaybe
-
-    else
-        updateUser
+resolver : () -> Arguments -> GraphQL.Response.Response (Maybe User)
+resolver _ args =
+    Table.Users.updateOne
+        { set =
+            Optional.toList
+                [ args.username |> Optional.map Table.Users.Value.username
+                , args.avatarUrl |> Optional.map Table.Users.Value.avatarUrl
+                ]
+        , where_ = Just (Table.Users.Where.Id.equals args.id)
+        , returning = Schema.User.selectAll
+        }
+        |> GraphQL.Response.fromDatabaseQuery

@@ -2,9 +2,9 @@ module GraphQL.Response exposing
     ( Response
     , ok, err
     , fromDatabaseQuery
+    , batchMaybe, batchList
     , map, andThen
     , toCmd
-    , batch
     )
 
 {-|
@@ -12,6 +12,7 @@ module GraphQL.Response exposing
 @docs Response
 @docs ok, err
 @docs fromDatabaseQuery
+@docs batchMaybe, batchList
 
 @docs map, andThen
 @docs toCmd
@@ -55,13 +56,13 @@ err reason =
     Failure reason
 
 
-batch :
+batchMaybe :
     { id : Int
     , info : Info
     , toBatchResponse : List Int -> Response (List (Maybe value))
     }
     -> Response (Maybe value)
-batch options =
+batchMaybe options =
     let
         fromListToItem : List Int -> List (Maybe value) -> Maybe value
         fromListToItem ids maybeValues =
@@ -72,6 +73,33 @@ batch options =
 
                 Nothing ->
                     Nothing
+    in
+    Batch
+        { id = options.id
+        , info = options.info
+        , toBatchResponse = options.toBatchResponse
+        , fromListToItem = fromListToItem
+        }
+
+
+batchList :
+    { id : Int
+    , info : Info
+    , toBatchResponse : List Int -> Response (List (List value))
+    }
+    -> Response (List value)
+batchList options =
+    let
+        fromListToItem : List Int -> List (List value) -> List value
+        fromListToItem ids listOfLists =
+            case List.Extra.findIndex (\id -> id == options.id) ids of
+                Just index ->
+                    List.Extra.getAt index listOfLists
+                        |> Maybe.withDefault []
+
+                -- |> Maybe.andThen identity
+                Nothing ->
+                    []
     in
     Batch
         { id = options.id

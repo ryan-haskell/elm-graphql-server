@@ -22,19 +22,10 @@ argumentsDecoder =
         (Json.Decode.field "id" Json.Decode.int)
 
 
-resolver : Info -> () -> Arguments -> GraphQL.Response.Response (Maybe User)
-resolver info _ args =
-    let
-        deleteUser =
-            Table.Users.deleteOne
-                { where_ = Just (Table.Users.Where.Id.equals args.id)
-                , returning = Schema.User.selectAll
-                }
-                |> GraphQL.Response.fromDatabaseQuery
-    in
-    if GraphQL.Info.hasSelection "posts" info then
-        deleteUser
-            |> GraphQL.Response.andThen Resolvers.User.Posts.includeForMaybe
-
-    else
-        deleteUser
+resolver : () -> Arguments -> GraphQL.Response.Response (Maybe User)
+resolver _ args =
+    Table.Users.deleteOne
+        { where_ = Just (Table.Users.Where.Id.equals args.id)
+        , returning = Schema.User.selectAll
+        }
+        |> GraphQL.Response.fromDatabaseQuery
