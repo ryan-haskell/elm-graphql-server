@@ -264,7 +264,7 @@ runResolver request =
             Ports.failure
                 { request = request
                 , reason =
-                    "Did not recognize {{objectName}}.{{fieldName}}"
+                    "Elm application is missing a resolver for {{objectName}}.{{fieldName}}"
                         |> String.replace "{{objectName}}" objectName
                         |> String.replace "{{fieldName}}" fieldName
                 }
@@ -272,7 +272,7 @@ runResolver request =
         Err _ ->
             Ports.failure
                 { request = request
-                , reason = "Field was not passed in."
+                , reason = "Elm expected `objectName` and `fieldName` in the request."
                 }
 
 

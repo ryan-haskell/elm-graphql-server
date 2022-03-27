@@ -57,7 +57,7 @@ const typeDefs = fs.readFileSync(path.join(__dirname, "schema.gql"), {
 
 // Define dynamic resolvers, using a JS object proxy
 const fieldHandler = (objectName) => ({
-  get (target, fieldName, receiver) {
+  get (_, fieldName) {
     if (fieldName === "__isTypeOf") return () => objectName
     return (parent, args, context, info) => {
       const request = { objectName, fieldName, parent, args, context, info }
@@ -68,7 +68,7 @@ const fieldHandler = (objectName) => ({
       return new Promise((resolve, reject) => {
         const handlers = {
           SUCCESS: (value) => resolve(value),
-          FAILURE: (reason) => reject(reason),
+          FAILURE: (reason) => reject(Error(reason)),
           DATABASE_OUT: async (sql) => {
               console.log(`\n\n💾 ${sql}\n`)
               let response = await context.db.all(sql)
@@ -93,12 +93,6 @@ const fieldHandler = (objectName) => ({
   },
 })
 
-const resolvers = new Proxy({}, {
-  get(target, objectName, receiver) {
-    return new Proxy({}, fieldHandler(objectName))
-  }
-})
-
 // The function to run when the server starts up
 const start = async () => {
   // Start up sqlite database
@@ -107,7 +101,11 @@ const start = async () => {
   // Start GraphQL server
   const server = new ApolloServer({
     typeDefs,
-    resolvers,
+    resolvers: new Proxy({}, {
+      get(_, objectName) {
+        return new Proxy({}, fieldHandler(objectName))
+      }
+    }),
     context: ({ req }) => ({
       currentUserId: req.header('Authorization'),
       db
