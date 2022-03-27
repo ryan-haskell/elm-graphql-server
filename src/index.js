@@ -7,7 +7,6 @@ const { ApolloServerPluginLandingPageGraphQLPlayground } = require("apollo-serve
 // so we cannot use the standard `sqlite3` NPM package (it's still on 3.34.0)
 const sqlite3 = require('@louislam/sqlite3')
 const { open } = require('sqlite')
-const { nextTick } = require("process")
 
 const Database = {
   start: async () => {
@@ -57,27 +56,41 @@ const typeDefs = fs.readFileSync(
   { encoding: "utf8" }
 )
 
+const toUniqueResolverId = (path) => {
+  let key = typeof path.key === 'string' ? path.key : `[${path.key}]`
+  if (path.prev) {
+    return toUniqueResolverId(path.prev) + "." + key
+  } else {
+    return key
+  }
+}
+
+let unresolved = []
 
 // GraphQL resolvers are dynamically generated
 const fieldHandler = (objectName) => ({
   get (_, fieldName) {
     if (fieldName === "__isTypeOf") return () => objectName
     return (parent, args, context, info) => {
-      // console.log(info.path)
-      const request = { objectName, fieldName, parent, args, context, info }
+      const resolverId = toUniqueResolverId(info.path)
+      unresolved[resolverId] = unresolved[resolverId] ? unresolved[resolverId] + 1 : 1
 
-      context.worker.ports.runResolver.send({ request })
+      context.worker.ports.runResolver.send({ resolverId, request: { objectName, fieldName, parent, args, context, info } })
       
       return new Promise((resolve, reject) => {
         const handlers = {
-          SUCCESS: (value) => resolve(value),
+          SUCCESS: (value) => {
+            unresolved[resolverId] = unresolved[resolverId] - 1
+            console.log(unresolved)
+            resolve(value)
+          },
           FAILURE: (reason) => reject(Error(reason)),
           DATABASE_OUT: async (sql) => {
             console.log(`\n\n💾 ${sql}\n`)
             let response = await context.db.all(sql)
             console.table(response)
     
-            context.worker.ports.databaseIn.send({ request, response })
+            context.worker.ports.databaseIn.send({ resolverId, response })
           },
           BATCH_OUT: async ({ id, pathId }) => {
             if (context.batchRequestIds[pathId] === undefined) {
@@ -87,11 +100,11 @@ const fieldHandler = (objectName) => ({
                 console.log('Sending batch IDs for: ', context.batchRequestIds[pathId])
 
                 context.worker.ports.batchIn.send({
-                  request,
+                  resolverId,
                   pathId,
                   ids: context.batchRequestIds[pathId]
                 })
-              }, 300) // TODO: Find a smarter way to handle this
+              }) // TODO: Find a smarter way to handle this
             }
 
             context.batchRequestIds[pathId].push(id)
@@ -104,18 +117,15 @@ const fieldHandler = (objectName) => ({
         context.worker.ports.outgoing.subscribe(msg => {
           // This conditional is critical for our resolver to work,
           // because it ignores any Elm messages from other resolvers
-          // 
-          // WARNING: JS uses object references for equality. If anything
-          // freaky starts to happen– we should change this code to use
-          // something like an Integer ID, rather than comparing the full
-          // JSON request objects.
-          if (msg.request === request) {
+          // console.log(msg.tag, msg.resolverId)
+          if (msg.resolverId === resolverId) {
             const handler = handlers[msg.tag]
             if (handler) {
               handler(msg.payload)
             } else {
               console.warn(`❗️ Unrecognized port tag: ${msg.tag}`)
             }
+          } else {
           }
         })
       })

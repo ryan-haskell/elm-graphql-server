@@ -13,33 +13,33 @@ import Json.Encode
 
 
 success :
-    { request : Json.Decode.Value
+    { resolverId : String
     , value : Json.Decode.Value
     }
     -> Cmd msg
 success options =
     outgoing
         { tag = "SUCCESS"
-        , request = options.request
+        , resolverId = options.resolverId
         , payload = options.value
         }
 
 
 failure :
-    { request : Json.Decode.Value
+    { resolverId : String
     , reason : String
     }
     -> Cmd msg
 failure options =
     outgoing
         { tag = "FAILURE"
-        , request = options.request
+        , resolverId = options.resolverId
         , payload = Json.Encode.string options.reason
         }
 
 
 batchRequestOut :
-    { request : Json.Decode.Value
+    { resolverId : String
     , id : Int
     , pathId : String
     }
@@ -47,7 +47,7 @@ batchRequestOut :
 batchRequestOut options =
     outgoing
         { tag = "BATCH_OUT"
-        , request = options.request
+        , resolverId = options.resolverId
         , payload =
             Json.Encode.object
                 [ ( "id", Json.Encode.int options.id )
@@ -57,20 +57,20 @@ batchRequestOut options =
 
 
 databaseOut :
-    { request : Json.Decode.Value
+    { resolverId : String
     , sql : String
     }
     -> Cmd msg
 databaseOut options =
     outgoing
         { tag = "DATABASE_OUT"
-        , request = options.request
+        , resolverId = options.resolverId
         , payload = Json.Encode.string options.sql
         }
 
 
 port databaseIn :
-    ({ request : Json.Decode.Value
+    ({ resolverId : String
      , response : Json.Decode.Value
      }
      -> msg
@@ -79,7 +79,7 @@ port databaseIn :
 
 
 port batchIn :
-    ({ request : Json.Decode.Value
+    ({ resolverId : String
      , pathId : String
      , ids : List Int
      }
@@ -89,7 +89,8 @@ port batchIn :
 
 
 port runResolver :
-    ({ request : Json.Decode.Value
+    ({ resolverId : String
+     , request : Json.Decode.Value
      }
      -> msg
     )
@@ -97,7 +98,7 @@ port runResolver :
 
 
 port outgoing :
-    { request : Json.Decode.Value
+    { resolverId : String
     , tag : String
     , payload : Json.Decode.Value
     }
