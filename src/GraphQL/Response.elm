@@ -97,7 +97,6 @@ batchList options =
                     List.Extra.getAt index listOfLists
                         |> Maybe.withDefault []
 
-                -- |> Maybe.andThen identity
                 Nothing ->
                     []
     in
@@ -143,8 +142,13 @@ map fn response =
                 , onResponse = \json -> map fn (data.onResponse json)
                 }
 
-        Batch _ ->
-            Debug.todo "batch map"
+        Batch data ->
+            Failure "Batched queries do not support Response.map"
+
+
+mapList : (List a -> List b) -> Response (List a) -> Response (List b)
+mapList =
+    map
 
 
 andThen : (a -> Response b) -> Response a -> Response b
@@ -162,8 +166,13 @@ andThen toResponse response =
                 , onResponse = \json -> andThen toResponse (data.onResponse json)
                 }
 
-        Batch _ ->
-            Debug.todo "batch andThen"
+        Batch data ->
+            Failure "Batched queries do not support Response.andThen"
+
+
+andThenList : (List a -> Response (List b)) -> Response (List a) -> Response (List b)
+andThenList =
+    andThen
 
 
 toCmd :
