@@ -166,7 +166,20 @@ andThen toResponse response =
 
 
 toCmd :
-    Options value msg
+    { onSuccess : value -> Cmd msg
+    , onFailure : String -> Cmd msg
+    , onDatabaseQuery :
+        { sql : String
+        , onResponse : Json.Decode.Value -> Cmd msg
+        }
+        -> msg
+    , onBatchQuery :
+        { id : Int
+        , info : Info
+        , onResponse : List Int -> Cmd msg
+        }
+        -> msg
+    }
     -> Response value
     -> Cmd msg
 toCmd options response =
@@ -205,29 +218,3 @@ toCmd options response =
 sendMessage : msg -> Cmd msg
 sendMessage msg =
     Task.succeed msg |> Task.perform identity
-
-
-type alias Options value msg =
-    { onSuccess : value -> Cmd msg
-    , onFailure : String -> Cmd msg
-    , onDatabaseQuery :
-        { sql : String
-        , onResponse : Json.Decode.Value -> Cmd msg
-        }
-        -> msg
-    , onBatchQuery :
-        { id : Int
-        , info : Info
-        , onResponse : List Int -> Cmd msg
-        }
-        -> msg
-    }
-
-
-mapOptions : (b -> a) -> Options a msg -> Options b msg
-mapOptions fn options =
-    { onSuccess = \b -> options.onSuccess (fn b)
-    , onFailure = options.onFailure
-    , onDatabaseQuery = options.onDatabaseQuery
-    , onBatchQuery = options.onBatchQuery
-    }
