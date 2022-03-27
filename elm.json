@@ -13,7 +13,8 @@
             "elm/random": "1.0.0",
             "elm/time": "1.0.0",
             "elm-community/json-extra": "4.3.0",
-            "elm-community/list-extra": "8.5.2"
+            "elm-community/list-extra": "8.5.2",
+            "pzp1997/assoc-list": "1.0.0"
         },
         "indirect": {
             "elm/parser": "1.1.0",

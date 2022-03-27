@@ -1,6 +1,6 @@
 module Main exposing (main)
 
-import Dict exposing (Dict)
+import AssocList exposing (Dict)
 import GraphQL.Context
 import GraphQL.Info
 import GraphQL.Response exposing (Response)
@@ -48,13 +48,13 @@ main =
 
 
 type alias Model =
-    { onResponse : Maybe (Json.Decode.Value -> Cmd Msg)
+    { onResponse : Dict Json.Decode.Value (Json.Decode.Value -> Cmd Msg)
     }
 
 
 init : Json.Decode.Value -> ( Model, Cmd Msg )
 init flags =
-    ( { onResponse = Nothing }
+    ( { onResponse = AssocList.empty }
     , Cmd.none
     )
 
@@ -341,7 +341,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ResolverSentDatabaseQuery request options ->
-            ( { model | onResponse = Just options.onResponse }
+            ( { model | onResponse = AssocList.insert request options.onResponse model.onResponse }
             , Ports.databaseOut
                 { request = request
                 , sql = options.sql
@@ -354,9 +354,9 @@ update msg model =
             )
 
         JavascriptSentDatabaseResponse { request, response } ->
-            case model.onResponse of
+            case AssocList.get request model.onResponse of
                 Just onResponse ->
-                    ( { model | onResponse = Nothing }
+                    ( { model | onResponse = AssocList.remove request model.onResponse }
                     , onResponse response
                     )
 
