@@ -1,4 +1,4 @@
-module GraphQL.Info exposing (Info, fromJson, hasSelection, toPathId)
+module GraphQL.Info exposing (Info, fromJson, hasSelection, toBatchId)
 
 import Json.Decode
 import Json.Encode
@@ -9,7 +9,7 @@ type Info
 
 
 type alias Internals =
-    { pathId : String -- Example "posts.author"
+    { batchId : String -- Example "posts.author"
     , uniquePathId : String -- Example "posts.[0].author"
     , selections : List String
     }
@@ -28,7 +28,7 @@ fromJson fieldName json =
 fallback : Info
 fallback =
     Info
-        { pathId = ""
+        { batchId = ""
         , uniquePathId = ""
         , selections = []
         }
@@ -144,6 +144,6 @@ hasSelection field (Info info) =
     List.member field info.selections
 
 
-toPathId : Info -> String
-toPathId (Info info) =
-    info.pathId
+toBatchId : Info -> String
+toBatchId (Info info) =
+    info.batchId

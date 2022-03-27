@@ -65,51 +65,71 @@ const toUniqueResolverId = (path) => {
   }
 }
 
-let unresolved = []
-
 // GraphQL resolvers are dynamically generated
 const fieldHandler = (objectName) => ({
   get (_, fieldName) {
     if (fieldName === "__isTypeOf") return () => objectName
     return (parent, args, context, info) => {
       const resolverId = toUniqueResolverId(info.path)
-      unresolved[resolverId] = unresolved[resolverId] ? unresolved[resolverId] + 1 : 1
 
       context.worker.ports.runResolver.send({ resolverId, request: { objectName, fieldName, parent, args, context, info } })
-      
+
       return new Promise((resolve, reject) => {
         const handlers = {
           SUCCESS: (value) => {
-            unresolved[resolverId] = unresolved[resolverId] - 1
-            console.log(unresolved)
             resolve(value)
           },
           FAILURE: (reason) => reject(Error(reason)),
-          DATABASE_OUT: async (sql) => {
-            console.log(`\n\n💾 ${sql}\n`)
-            let response = await context.db.all(sql)
-            console.table(response)
-    
-            context.worker.ports.databaseIn.send({ resolverId, response })
+          DATABASE_OUT: async ({ sql, batchId }) => {
+            const key = batchId + sql
+            const sendToElm = (response) => context.worker.ports.databaseIn.send({ resolverId, response })
+
+            if (context.sqlCache[key]) {
+              const cachedResponse = context.sqlCache[key].response
+              console.log('✅ Cache hit')
+              if (cachedResponse) {
+                // If this SQL statement has already run, return the cached result
+                sendToElm(cachedResponse)
+              } else {
+                // If this SQL statement is currently being run, add yourself to
+                // the list of resolvers needing the data.
+                context.sqlCache[key].subscribers.push(sendToElm)
+              }
+            } else {
+              // If you're the first one here, run the SQL query!
+              context.sqlCache[key] = { subscribers: [], response: undefined }
+
+              console.log(`\n\n💾 ${sql}\n`)
+              let response = await context.db.all(sql)
+              console.table(response)
+
+              sendToElm(response)
+
+              // Let everyone else know
+              context.sqlCache[key].response = response
+              context.sqlCache[key].subscribers.forEach(otherResolversNeedingData => {
+                otherResolversNeedingData(response)
+              })
+            }
           },
-          BATCH_OUT: async ({ id, pathId }) => {
-            if (context.batchRequestIds[pathId] === undefined) {
-              context.batchRequestIds[pathId] = []
+          BATCH_OUT: async ({ id, batchId }) => {
+            if (context.batchRequestIds[batchId] === undefined) {
+              context.batchRequestIds[batchId] = []
 
               setTimeout(() => {
-                console.log('Sending batch IDs for: ', context.batchRequestIds[pathId])
+                // console.log('Sending batch IDs for: ', context.batchRequestIds[batchId])
 
                 context.worker.ports.batchIn.send({
                   resolverId,
-                  pathId,
-                  ids: context.batchRequestIds[pathId]
+                  batchId,
+                  ids: context.batchRequestIds[batchId]
                 })
               }) // TODO: Find a smarter way to handle this
             }
 
-            context.batchRequestIds[pathId].push(id)
+            context.batchRequestIds[batchId].push(id)
 
-            console.log(context.batchRequestIds[pathId])
+            // console.log(context.batchRequestIds[batchId])
             
           }
         }
@@ -151,6 +171,8 @@ const start = async () => {
       worker: Elm.Main.init(),
       // Allows us to prevent the N+1 problem, and batch similar requests
       batchRequestIds: {},
+      // Allows us to guarantee batched SQL statements only execute once
+      sqlCache: {},
       currentUserId: req.header('Authorization'),
       db
     }),

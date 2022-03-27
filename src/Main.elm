@@ -96,6 +96,7 @@ runResolver resolverId request =
             createResolver
                 { resolverId = resolverId
                 , request = request
+                , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Query.Hello.argumentDecoder
                 , resolver = Resolvers.Query.Hello.resolver
@@ -106,6 +107,7 @@ runResolver resolverId request =
             createResolver
                 { resolverId = resolverId
                 , request = request
+                , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Query.User.argumentsDecoder
                 , resolver = Resolvers.Query.User.resolver info
@@ -116,6 +118,7 @@ runResolver resolverId request =
             createResolver
                 { resolverId = resolverId
                 , request = request
+                , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Query.Users.resolver info
@@ -126,6 +129,7 @@ runResolver resolverId request =
             createResolver
                 { resolverId = resolverId
                 , request = request
+                , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Query.Post.argumentsDecoder
                 , resolver = Resolvers.Query.Post.resolver info
@@ -136,6 +140,7 @@ runResolver resolverId request =
             createResolver
                 { resolverId = resolverId
                 , request = request
+                , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Query.Posts.resolver
@@ -146,6 +151,7 @@ runResolver resolverId request =
             createResolver
                 { resolverId = resolverId
                 , request = request
+                , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.CreatePost.argumentsDecoder
                 , resolver = Resolvers.Mutation.CreatePost.resolver info context
@@ -156,6 +162,7 @@ runResolver resolverId request =
             createResolver
                 { resolverId = resolverId
                 , request = request
+                , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.UpdatePost.argumentsDecoder
                 , resolver = Resolvers.Mutation.UpdatePost.resolver info
@@ -166,6 +173,7 @@ runResolver resolverId request =
             createResolver
                 { resolverId = resolverId
                 , request = request
+                , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.DeletePost.argumentsDecoder
                 , resolver = Resolvers.Mutation.DeletePost.resolver info
@@ -176,6 +184,7 @@ runResolver resolverId request =
             createResolver
                 { resolverId = resolverId
                 , request = request
+                , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.CreateUser.argumentsDecoder
                 , resolver = Resolvers.Mutation.CreateUser.resolver info
@@ -186,6 +195,7 @@ runResolver resolverId request =
             createResolver
                 { resolverId = resolverId
                 , request = request
+                , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.UpdateUser.argumentsDecoder
                 , resolver = Resolvers.Mutation.UpdateUser.resolver info
@@ -196,6 +206,7 @@ runResolver resolverId request =
             createResolver
                 { resolverId = resolverId
                 , request = request
+                , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.DeleteUser.argumentsDecoder
                 , resolver = Resolvers.Mutation.DeleteUser.resolver info
@@ -206,6 +217,7 @@ runResolver resolverId request =
             createResolver
                 { resolverId = resolverId
                 , request = request
+                , info = info
                 , parentDecoder = Schema.User.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.User.Id.resolver
@@ -216,6 +228,7 @@ runResolver resolverId request =
             createResolver
                 { resolverId = resolverId
                 , request = request
+                , info = info
                 , parentDecoder = Schema.User.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.User.Username.resolver
@@ -226,6 +239,7 @@ runResolver resolverId request =
             createResolver
                 { resolverId = resolverId
                 , request = request
+                , info = info
                 , parentDecoder = Schema.User.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.User.AvatarUrl.resolver
@@ -236,6 +250,7 @@ runResolver resolverId request =
             createResolver
                 { resolverId = resolverId
                 , request = request
+                , info = info
                 , parentDecoder = Schema.User.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.User.Posts.resolver
@@ -246,6 +261,7 @@ runResolver resolverId request =
             createResolver
                 { resolverId = resolverId
                 , request = request
+                , info = info
                 , parentDecoder = Schema.Post.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Post.Id.resolver
@@ -256,6 +272,7 @@ runResolver resolverId request =
             createResolver
                 { resolverId = resolverId
                 , request = request
+                , info = info
                 , parentDecoder = Schema.Post.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Post.ImageUrls.resolver
@@ -266,6 +283,7 @@ runResolver resolverId request =
             createResolver
                 { resolverId = resolverId
                 , request = request
+                , info = info
                 , parentDecoder = Schema.Post.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Post.Caption.resolver
@@ -276,6 +294,7 @@ runResolver resolverId request =
             createResolver
                 { resolverId = resolverId
                 , request = request
+                , info = info
                 , parentDecoder = Schema.Post.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Post.CreatedAt.resolver
@@ -286,6 +305,7 @@ runResolver resolverId request =
             createResolver
                 { resolverId = resolverId
                 , request = request
+                , info = info
                 , parentDecoder = Schema.Post.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Post.Author.resolver info
@@ -310,6 +330,7 @@ runResolver resolverId request =
 
 createResolver :
     { resolverId : ResolverId
+    , info : Info
     , request : Json.Decode.Value
     , parentDecoder : Json.Decode.Decoder parent
     , argsDecoder : Json.Decode.Decoder args
@@ -341,8 +362,13 @@ createResolver options =
                                 { resolverId = options.resolverId
                                 , reason = reason
                                 }
-                    , onDatabaseQuery = ElmSentDatabaseQuery options.resolverId
-                    , onBatchQuery = ElmSentBatchRequest options.resolverId
+                    , onDatabaseQuery =
+                        ElmSentDatabaseQuery
+                            options.resolverId
+                            (GraphQL.Info.toBatchId options.info)
+                    , onBatchQuery =
+                        ElmSentBatchRequest
+                            options.resolverId
                     }
 
         Err _ ->
@@ -359,6 +385,7 @@ createResolver options =
 type Msg
     = ElmSentDatabaseQuery
         ResolverId
+        BatchResolverId
         { sql : String
         , onResponse : Json.Decode.Value -> Cmd Msg
         }
@@ -374,7 +401,7 @@ type Msg
         }
     | JavascriptSentBatchResponse
         { resolverId : ResolverId
-        , pathId : BatchResolverId
+        , batchId : BatchResolverId
         , ids : List Int
         }
     | JavascriptRequestedResolver
@@ -387,10 +414,11 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         -- case Debug.log "msg" msg of
-        ElmSentDatabaseQuery resolverId options ->
+        ElmSentDatabaseQuery resolverId batchId options ->
             ( { model | databaseResponseDict = AssocList.insert resolverId options.onResponse model.databaseResponseDict }
             , Ports.databaseOut
                 { resolverId = resolverId
+                , batchId = batchId
                 , sql = options.sql
                 }
             )
@@ -404,11 +432,11 @@ update msg model =
                         |> (\list -> options.onResponse :: list)
                         |> Just
             in
-            ( { model | batchResponseDict = Dict.update (GraphQL.Info.toPathId options.info) addCmdToList model.batchResponseDict }
+            ( { model | batchResponseDict = Dict.update (GraphQL.Info.toBatchId options.info) addCmdToList model.batchResponseDict }
             , Ports.batchRequestOut
                 { resolverId = resolverId
                 , id = options.id
-                , pathId = GraphQL.Info.toPathId options.info
+                , batchId = GraphQL.Info.toBatchId options.info
                 }
             )
 
@@ -432,10 +460,10 @@ update msg model =
                         }
                     )
 
-        JavascriptSentBatchResponse { resolverId, pathId, ids } ->
-            case Dict.get pathId model.batchResponseDict of
+        JavascriptSentBatchResponse { resolverId, batchId, ids } ->
+            case Dict.get batchId model.batchResponseDict of
                 Just listOfHandlers ->
-                    ( { model | batchResponseDict = Dict.remove pathId model.batchResponseDict }
+                    ( { model | batchResponseDict = Dict.remove batchId model.batchResponseDict }
                     , Cmd.batch (List.map (\onResponse -> onResponse ids) listOfHandlers)
                     )
 

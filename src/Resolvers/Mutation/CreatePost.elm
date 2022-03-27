@@ -35,12 +35,7 @@ resolver info context _ args =
             GraphQL.Response.err "Must be signed in to create a post."
 
         Just currentUserId ->
-            if GraphQL.Info.hasSelection "author" info then
-                createPostAndEdge args currentUserId
-                    |> GraphQL.Response.andThen Resolvers.Post.Author.include
-
-            else
-                createPostAndEdge args currentUserId
+            createPostAndEdge args currentUserId
 
 
 createPostAndEdge : Arguments -> Int -> GraphQL.Response.Response Post

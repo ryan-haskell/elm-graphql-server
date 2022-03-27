@@ -41,7 +41,7 @@ failure options =
 batchRequestOut :
     { resolverId : String
     , id : Int
-    , pathId : String
+    , batchId : String
     }
     -> Cmd msg
 batchRequestOut options =
@@ -51,13 +51,14 @@ batchRequestOut options =
         , payload =
             Json.Encode.object
                 [ ( "id", Json.Encode.int options.id )
-                , ( "pathId", Json.Encode.string options.pathId )
+                , ( "batchId", Json.Encode.string options.batchId )
                 ]
         }
 
 
 databaseOut :
     { resolverId : String
+    , batchId : String
     , sql : String
     }
     -> Cmd msg
@@ -65,7 +66,11 @@ databaseOut options =
     outgoing
         { tag = "DATABASE_OUT"
         , resolverId = options.resolverId
-        , payload = Json.Encode.string options.sql
+        , payload =
+            Json.Encode.object
+                [ ( "sql", Json.Encode.string options.sql )
+                , ( "batchId", Json.Encode.string options.batchId )
+                ]
         }
 
 
@@ -80,7 +85,7 @@ port databaseIn :
 
 port batchIn :
     ({ resolverId : String
-     , pathId : String
+     , batchId : String
      , ids : List Int
      }
      -> msg
