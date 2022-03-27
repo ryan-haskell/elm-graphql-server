@@ -146,11 +146,6 @@ map fn response =
             Failure "Batched queries do not support Response.map"
 
 
-mapList : (List a -> List b) -> Response (List a) -> Response (List b)
-mapList =
-    map
-
-
 andThen : (a -> Response b) -> Response a -> Response b
 andThen toResponse response =
     case response of
@@ -168,11 +163,6 @@ andThen toResponse response =
 
         Batch data ->
             Failure "Batched queries do not support Response.andThen"
-
-
-andThenList : (List a -> Response (List b)) -> Response (List a) -> Response (List b)
-andThenList =
-    andThen
 
 
 toCmd :
