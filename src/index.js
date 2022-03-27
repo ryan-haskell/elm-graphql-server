@@ -61,7 +61,9 @@ const fieldHandler = (objectName) => ({
     if (fieldName === "__isTypeOf") return () => objectName
     return (parent, args, context, info) => {
       const request = { objectName, fieldName, parent, args, context, info }
-      const worker = Elm.Main.init({ flags: request })
+      const worker = Elm.Main.init()
+
+      worker.ports.runResolver.send({ request })
       
       return new Promise((resolve, reject) => {
         const handlers = {

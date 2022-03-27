@@ -1,4 +1,4 @@
-port module Ports exposing (databaseIn, databaseOut, failure, success)
+port module Ports exposing (databaseIn, databaseOut, failure, runResolver, success)
 
 import Json.Decode
 import Json.Encode
@@ -46,6 +46,14 @@ databaseOut options =
 port databaseIn :
     ({ request : Json.Decode.Value
      , response : Json.Decode.Value
+     }
+     -> msg
+    )
+    -> Sub msg
+
+
+port runResolver :
+    ({ request : Json.Decode.Value
      }
      -> msg
     )

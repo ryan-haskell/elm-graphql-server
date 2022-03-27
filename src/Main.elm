@@ -55,7 +55,7 @@ type alias Model =
 init : Json.Decode.Value -> ( Model, Cmd Msg )
 init flags =
     ( { onResponse = Nothing }
-    , runResolver flags
+    , Cmd.none
     )
 
 
@@ -332,6 +332,9 @@ type Msg
         { request : Json.Decode.Value
         , response : Json.Decode.Value
         }
+    | JavascriptRequestedResolver
+        { request : Json.Decode.Value
+        }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -343,6 +346,11 @@ update msg model =
                 { request = request
                 , sql = options.sql
                 }
+            )
+
+        JavascriptRequestedResolver { request } ->
+            ( model
+            , runResolver request
             )
 
         JavascriptSentDatabaseResponse { request, response } ->
@@ -367,4 +375,7 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Ports.databaseIn JavascriptSentDatabaseResponse
+    Sub.batch
+        [ Ports.databaseIn JavascriptSentDatabaseResponse
+        , Ports.runResolver JavascriptRequestedResolver
+        ]
