@@ -55,13 +55,32 @@ const typeDefs = fs.readFileSync(path.join(__dirname, "schema.gql"), {
   encoding: "utf8",
 })
 
+let Store = {
+  // This will store Elm worker applications for a given
+  // request. It's important that these are reused from one 
+  // resolver to another– because it allows us to batch SQL 
+  // requests for performance reasons
+  workers: {}
+}
+
 // Define dynamic resolvers, using a JS object proxy
 const fieldHandler = (objectName) => ({
   get (_, fieldName) {
     if (fieldName === "__isTypeOf") return () => objectName
     return (parent, args, context, info) => {
       const request = { objectName, fieldName, parent, args, context, info }
-      const worker = Elm.Main.init()
+      let worker = undefined
+      
+      if (Store.workers[request]) {
+        // If a worker already exists for this request,
+        // use the existing one
+        worker = Store.workers[request]
+      } else {
+        // If this is the first GraphQL resolver for this request
+        // create an Elm worker, and share it in Store.workers
+        worker = Elm.Main.init()
+        Store.workers[request] = worker
+      }
 
       worker.ports.runResolver.send({ request })
       
