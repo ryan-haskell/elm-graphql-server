@@ -86,7 +86,7 @@ const fieldHandler = (objectName) => ({
 
             if (context.sqlCache[key]) {
               const cachedResponse = context.sqlCache[key].response
-              console.log('✅ Cache hit')
+
               if (cachedResponse) {
                 // If this SQL statement has already run, return the cached result
                 sendToElm(cachedResponse)
