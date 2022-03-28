@@ -1,10 +1,18 @@
-module GraphQL.Batch exposing (oneToMany)
+module GraphQL.Batch exposing (forListOfValues, forMaybeValue)
 
 import Database.Query
 import Dict exposing (Dict)
 import GraphQL.Info exposing (Info)
 import GraphQL.Response exposing (Response)
 import List.Extra
+
+
+type alias KeyId =
+    Int
+
+
+type alias ValueId =
+    Int
 
 
 
@@ -49,7 +57,7 @@ is returning `Schema.Post` items, we would need something like this:
   - fromValueToValueId = `\(Schema.Post post) -> post.id`
 
 -}
-oneToMany :
+forListOfValues :
     { id : KeyId
     , info : Info
     , fetchEdges : List KeyId -> Database.Query.Query a (List edge)
@@ -59,49 +67,16 @@ oneToMany :
     , fromValueToValueId : value -> ValueId
     }
     -> Response (List value)
-oneToMany options =
-    GraphQL.Response.fromBatchQueryForList
-        { id = options.id
-        , info = options.info
-        , toBatchResponse = toBatchResponse options
-        }
-
-
-
--- INTERNALS
-
-
-type alias KeyId =
-    Int
-
-
-type alias ValueId =
-    Int
-
-
-type alias Options edge value a b =
-    { id : KeyId
-    , info : Info
-    , fetchEdges : List KeyId -> Database.Query.Query a (List edge)
-    , fetchValues : List edge -> Database.Query.Query b (List value)
-    , fromEdgeToKeyId : edge -> KeyId
-    , fromEdgeToValueId : edge -> ValueId
-    , fromValueToValueId : value -> ValueId
-    }
-
-
-toBatchResponse : Options edge value a b -> List KeyId -> Response (Dict KeyId (List value))
-toBatchResponse options userIds =
-    options.fetchEdges userIds
-        |> GraphQL.Response.fromDatabaseQuery
-        |> GraphQL.Response.andThen (toOneToManyValueDict options)
-
-
-toOneToManyValueDict : Options edge value a b -> List edge -> Response (Dict KeyId (List value))
-toOneToManyValueDict options edges =
+forListOfValues options =
     let
-        groupByKeyId : List value -> Dict KeyId (List value)
-        groupByKeyId values =
+        toBatchResponse : List KeyId -> Response (Dict KeyId (List value))
+        toBatchResponse userIds =
+            options.fetchEdges userIds
+                |> GraphQL.Response.fromDatabaseQuery
+                |> GraphQL.Response.andThen toDict
+
+        toDict : List edge -> Response (Dict KeyId (List value))
+        toDict edges =
             let
                 valueIdDict : Dict KeyId (List ValueId)
                 valueIdDict =
@@ -115,31 +90,107 @@ toOneToManyValueDict options edges =
                             )
                         |> Dict.fromList
 
-                updateDict : KeyId -> Dict KeyId (List value) -> Dict KeyId (List value)
-                updateDict keyId dict =
+                groupByKeyId : List value -> Dict KeyId (List value)
+                groupByKeyId values =
                     let
-                        valueIds : List ValueId
-                        valueIds =
-                            Dict.get keyId valueIdDict
-                                |> Maybe.withDefault []
+                        updateDict : KeyId -> Dict KeyId (List value) -> Dict KeyId (List value)
+                        updateDict keyId dict =
+                            let
+                                valueIds : List ValueId
+                                valueIds =
+                                    Dict.get keyId valueIdDict
+                                        |> Maybe.withDefault []
 
-                        valuesMatchingThisKey : List value
-                        valuesMatchingThisKey =
-                            List.filter
-                                (\item ->
-                                    List.member (options.fromValueToValueId item) valueIds
-                                )
-                                values
+                                valuesMatchingThisKey : List value
+                                valuesMatchingThisKey =
+                                    List.filter
+                                        (\item ->
+                                            List.member (options.fromValueToValueId item) valueIds
+                                        )
+                                        values
+                            in
+                            Dict.insert keyId valuesMatchingThisKey dict
                     in
-                    Dict.insert keyId
-                        valuesMatchingThisKey
-                        dict
+                    List.foldl updateDict Dict.empty (Dict.keys valueIdDict)
             in
-            List.foldl
-                updateDict
-                Dict.empty
-                (Dict.keys valueIdDict)
+            options.fetchValues edges
+                |> GraphQL.Response.fromDatabaseQuery
+                |> GraphQL.Response.map groupByKeyId
     in
-    options.fetchValues edges
-        |> GraphQL.Response.fromDatabaseQuery
-        |> GraphQL.Response.map groupByKeyId
+    GraphQL.Response.fromBatchQueryForList
+        { id = options.id
+        , info = options.info
+        , toBatchResponse = toBatchResponse
+        }
+
+
+forMaybeValue :
+    { id : KeyId
+    , info : Info
+    , fetchEdges : List KeyId -> Database.Query.Query a (List edge)
+    , fetchValues : List edge -> Database.Query.Query b (List value)
+    , fromEdgeToKeyId : edge -> KeyId
+    , fromEdgeToValueId : edge -> ValueId
+    , fromValueToValueId : value -> ValueId
+    }
+    -> Response (Maybe value)
+forMaybeValue options =
+    let
+        toBatchResponse : List KeyId -> Response (Dict KeyId value)
+        toBatchResponse userIds =
+            options.fetchEdges userIds
+                |> GraphQL.Response.fromDatabaseQuery
+                |> GraphQL.Response.andThen toDict
+
+        toDict : List edge -> Response (Dict KeyId value)
+        toDict edges =
+            let
+                valueIdDict : Dict KeyId (List ValueId)
+                valueIdDict =
+                    edges
+                        |> List.Extra.gatherEqualsBy options.fromEdgeToKeyId
+                        |> List.map
+                            (\( first, rest ) ->
+                                ( options.fromEdgeToKeyId first
+                                , List.map options.fromEdgeToValueId (first :: rest)
+                                )
+                            )
+                        |> Dict.fromList
+
+                groupByKeyId : List value -> Dict KeyId value
+                groupByKeyId values =
+                    let
+                        updateDict : KeyId -> Dict KeyId value -> Dict KeyId value
+                        updateDict keyId dict =
+                            let
+                                valueIds : List ValueId
+                                valueIds =
+                                    Dict.get keyId valueIdDict
+                                        |> Maybe.withDefault []
+
+                                valuesMatchingThisKey : List value
+                                valuesMatchingThisKey =
+                                    List.filter
+                                        (\item ->
+                                            List.member (options.fromValueToValueId item) valueIds
+                                        )
+                                        values
+                            in
+                            case valuesMatchingThisKey of
+                                [] ->
+                                    dict
+
+                                value :: _ ->
+                                    Dict.insert keyId value dict
+                    in
+                    List.foldl updateDict Dict.empty (Dict.keys valueIdDict)
+            in
+            options.fetchValues edges
+                |> GraphQL.Response.fromDatabaseQuery
+                |> GraphQL.Response.map groupByKeyId
+    in
+    GraphQL.Response.fromBatchQueryForMaybe
+        { id = options.id
+        , info = options.info
+        , toBatchResponse = toBatchResponse
+        }

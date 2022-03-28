@@ -15,7 +15,7 @@ import Table.UserAuthoredPost.Where.UserId
 
 resolver : Info -> Schema.User -> () -> Response (List Post)
 resolver info (Schema.User user) args =
-    GraphQL.Batch.oneToMany
+    GraphQL.Batch.forListOfValues
         { id = user.id
         , info = info
         , fetchEdges = fetchEdges
