@@ -117,20 +117,15 @@ const fieldHandler = (objectName) => ({
               context.batchRequestIds[batchId] = []
 
               setTimeout(() => {
-                // console.log('Sending batch IDs for: ', context.batchRequestIds[batchId])
-
                 context.worker.ports.batchIn.send({
                   resolverId,
                   batchId,
                   ids: context.batchRequestIds[batchId]
                 })
-              }) // TODO: Find a smarter way to handle this
+              })
             }
 
             context.batchRequestIds[batchId].push(id)
-
-            // console.log(context.batchRequestIds[batchId])
-            
           }
         }
 
