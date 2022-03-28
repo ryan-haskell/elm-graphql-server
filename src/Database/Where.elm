@@ -1,6 +1,7 @@
 module Database.Where exposing (Clause, equalsInt, equalsString, inIntList, toSql)
 
 import Database.Utils
+import List.Extra
 
 
 type Clause column
@@ -34,4 +35,4 @@ toSql clause =
             columnName ++ " = " ++ Database.Utils.wrapStringValue stringValue
 
         InIntList columnName listOfIntValues ->
-            columnName ++ " IN " ++ Database.Utils.wrapListValue String.fromInt listOfIntValues
+            columnName ++ " IN " ++ Database.Utils.wrapListValue String.fromInt (List.Extra.unique listOfIntValues)

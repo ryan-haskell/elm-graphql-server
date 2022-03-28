@@ -1,5 +1,6 @@
 module Resolvers.Post.Author exposing (resolver)
 
+import Dict exposing (Dict)
 import GraphQL.Info exposing (Info)
 import GraphQL.Response exposing (Response)
 import List.Extra
@@ -16,7 +17,7 @@ import Table.Users.Where.Id
 
 resolver : Info -> Post -> () -> Response (Maybe User)
 resolver info (Schema.Post post) args =
-    GraphQL.Response.batchMaybe
+    GraphQL.Response.fromBatchQueryForMaybe
         { id = post.id
         , info = info
         , toBatchResponse = toBatchResponse
@@ -27,10 +28,10 @@ resolver info (Schema.Post post) args =
 -- INTERNALS
 
 
-toBatchResponse : List Int -> Response (List (Maybe User))
+toBatchResponse : List Int -> Response (Dict Int User)
 toBatchResponse postIds =
     fetchUserAuthoredPostEdges postIds
-        |> GraphQL.Response.andThen (fetchUsersAndGroupByPostId postIds)
+        |> GraphQL.Response.andThen fetchUsersAndGroupByPostId
 
 
 fetchUserAuthoredPostEdges : List Int -> Response (List UserAuthoredPost)
@@ -57,15 +58,15 @@ fetchUsers edges =
         |> GraphQL.Response.fromDatabaseQuery
 
 
-fetchUsersAndGroupByPostId : List Int -> List UserAuthoredPost -> Response (List (Maybe User))
-fetchUsersAndGroupByPostId postIds edges =
+fetchUsersAndGroupByPostId : List UserAuthoredPost -> Response (Dict Int User)
+fetchUsersAndGroupByPostId edges =
     let
-        groupByPostId : List User -> List (Maybe User)
+        groupByPostId : List User -> Dict Int User
         groupByPostId users =
-            List.map (usersForPostId users) postIds
+            List.foldl (usersForPostId users) Dict.empty edges
 
-        usersForPostId : List User -> Int -> Maybe User
-        usersForPostId users postId =
+        usersForPostId : List User -> UserAuthoredPost -> Dict Int User -> Dict Int User
+        usersForPostId users { postId } dict =
             let
                 edgesMatchingThisPost : List UserAuthoredPost
                 edgesMatchingThisPost =
@@ -79,7 +80,12 @@ fetchUsersAndGroupByPostId postIds edges =
                 findUserForEdge edge =
                     List.Extra.find (\(Schema.User user) -> user.id == edge.userId) users
             in
-            List.head usersMatchingThisPost
+            case usersMatchingThisPost of
+                [] ->
+                    dict
+
+                user :: _ ->
+                    Dict.insert postId user dict
     in
     fetchUsers edges
         |> GraphQL.Response.map groupByPostId

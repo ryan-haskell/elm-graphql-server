@@ -2,7 +2,8 @@ module GraphQL.Response exposing
     ( Response
     , ok, err
     , fromDatabaseQuery
-    , batchMaybe, batchList
+    , fromBatchQueryForMaybe
+    , fromBatchQueryForList
     , map, andThen
     , toCmd
     )
@@ -12,7 +13,8 @@ module GraphQL.Response exposing
 @docs Response
 @docs ok, err
 @docs fromDatabaseQuery
-@docs batchMaybe, batchList
+@docs fromBatchQueryForMaybe
+@docs fromBatchQueryForList
 
 @docs map, andThen
 @docs toCmd
@@ -20,6 +22,7 @@ module GraphQL.Response exposing
 -}
 
 import Database.Query
+import Dict exposing (Dict)
 import GraphQL.Info exposing (Info)
 import Json.Decode
 import Json.Encode
@@ -33,8 +36,8 @@ type Response value
     | Batch
         { id : Int
         , info : Info
-        , toBatchResponse : List Int -> Response (List value)
-        , fromListToItem : List Int -> List value -> value
+        , toBatchResponse : List Int -> Response (Dict Int value)
+        , fromDictToItem : Dict Int value -> value
         }
     | Query
         { sql : String
@@ -56,55 +59,51 @@ err reason =
     Failure reason
 
 
-batchMaybe :
+fromBatchQueryForMaybe :
     { id : Int
     , info : Info
-    , toBatchResponse : List Int -> Response (List (Maybe value))
+    , toBatchResponse : List Int -> Response (Dict Int value)
     }
     -> Response (Maybe value)
-batchMaybe options =
+fromBatchQueryForMaybe options =
     let
-        fromListToItem : List Int -> List (Maybe value) -> Maybe value
-        fromListToItem ids maybeValues =
-            case List.Extra.findIndex (\id -> id == options.id) ids of
-                Just index ->
-                    List.Extra.getAt index maybeValues
-                        |> Maybe.andThen identity
+        fromDictToItem : Dict Int (Maybe value) -> Maybe value
+        fromDictToItem =
+            Dict.get options.id >> Maybe.andThen identity
 
-                Nothing ->
-                    Nothing
+        toMaybeDict : Response (Dict Int value) -> Response (Dict Int (Maybe value))
+        toMaybeDict =
+            map (Dict.map (always Just))
     in
     Batch
         { id = options.id
         , info = options.info
-        , toBatchResponse = options.toBatchResponse
-        , fromListToItem = fromListToItem
+        , toBatchResponse = options.toBatchResponse >> toMaybeDict
+        , fromDictToItem = fromDictToItem
         }
 
 
-batchList :
+fromBatchQueryForList :
     { id : Int
     , info : Info
-    , toBatchResponse : List Int -> Response (List (List value))
+    , toBatchResponse : List Int -> Response (Dict Int (List value))
     }
     -> Response (List value)
-batchList options =
+fromBatchQueryForList options =
     let
-        fromListToItem : List Int -> List (List value) -> List value
-        fromListToItem ids listOfLists =
-            case List.Extra.findIndex (\id -> id == options.id) ids of
-                Just index ->
-                    List.Extra.getAt index listOfLists
-                        |> Maybe.withDefault []
+        fromDictToItem : Dict Int (List value) -> List value
+        fromDictToItem =
+            Dict.get options.id >> Maybe.withDefault []
 
-                Nothing ->
-                    []
+        toMaybeDict : Response (Dict Int (List value)) -> Response (Dict Int (Maybe (List value)))
+        toMaybeDict =
+            map (Dict.map (always Just))
     in
     Batch
         { id = options.id
         , info = options.info
         , toBatchResponse = options.toBatchResponse
-        , fromListToItem = fromListToItem
+        , fromDictToItem = fromDictToItem
         }
 
 
@@ -203,7 +202,7 @@ toCmd options response =
                 onResponse : List Int -> Cmd msg
                 onResponse ints =
                     query.toBatchResponse ints
-                        |> map (query.fromListToItem ints)
+                        |> map query.fromDictToItem
                         |> toCmd options
             in
             sendMessage
