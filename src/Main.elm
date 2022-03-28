@@ -253,7 +253,7 @@ runResolver resolverId request =
                 , info = info
                 , parentDecoder = Schema.User.decoder
                 , argsDecoder = Json.Decode.succeed ()
-                , resolver = Resolvers.User.Posts.resolver info
+                , resolver = Resolvers.User.Posts.resolver
                 , toJson = Json.Encode.list Schema.Post.encode
                 }
 
@@ -308,7 +308,7 @@ runResolver resolverId request =
                 , info = info
                 , parentDecoder = Schema.Post.decoder
                 , argsDecoder = Json.Decode.succeed ()
-                , resolver = Resolvers.Post.Author.resolver info
+                , resolver = Resolvers.Post.Author.resolver
                 , toJson = Json.Encode.Extra.maybe Schema.User.encode
                 }
 
@@ -350,7 +350,8 @@ createResolver options =
         Ok { parent, args } ->
             options.resolver parent args
                 |> GraphQL.Response.toCmd
-                    { onSuccess =
+                    { info = options.info
+                    , onSuccess =
                         \value ->
                             Ports.success
                                 { resolverId = options.resolverId

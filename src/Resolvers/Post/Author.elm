@@ -12,11 +12,10 @@ import Table.Users
 import Table.Users.Where.Id
 
 
-resolver : Info -> Post -> () -> Response (Maybe User)
-resolver info (Schema.Post post) args =
+resolver : Post -> () -> Response (Maybe User)
+resolver (Schema.Post post) args =
     GraphQL.Batch.forMaybeValue
         { id = post.id
-        , info = info
         , fetchEdges = fetchEdges
         , fetchValues = fetchUsers
         , fromEdgeToKeyId = .postId

@@ -13,11 +13,10 @@ import Table.UserAuthoredPost
 import Table.UserAuthoredPost.Where.UserId
 
 
-resolver : Info -> Schema.User -> () -> Response (List Post)
-resolver info (Schema.User user) args =
+resolver : Schema.User -> () -> Response (List Post)
+resolver (Schema.User user) args =
     GraphQL.Batch.forListOfValues
         { id = user.id
-        , info = info
         , fetchEdges = fetchEdges
         , fetchValues = fetchPosts
         , fromEdgeToKeyId = .userId

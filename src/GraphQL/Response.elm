@@ -35,7 +35,6 @@ type Response value
     | Failure String
     | Batch
         { id : Int
-        , info : Info
         , toBatchResponse : List Int -> Response (Dict Int value)
         , fromDictToItem : Dict Int value -> value
         }
@@ -61,7 +60,6 @@ err reason =
 
 fromBatchQueryForMaybe :
     { id : Int
-    , info : Info
     , toBatchResponse : List Int -> Response (Dict Int value)
     }
     -> Response (Maybe value)
@@ -77,7 +75,6 @@ fromBatchQueryForMaybe options =
     in
     Batch
         { id = options.id
-        , info = options.info
         , toBatchResponse = options.toBatchResponse >> toMaybeDict
         , fromDictToItem = fromDictToItem
         }
@@ -85,7 +82,6 @@ fromBatchQueryForMaybe options =
 
 fromBatchQueryForList :
     { id : Int
-    , info : Info
     , toBatchResponse : List Int -> Response (Dict Int (List value))
     }
     -> Response (List value)
@@ -101,7 +97,6 @@ fromBatchQueryForList options =
     in
     Batch
         { id = options.id
-        , info = options.info
         , toBatchResponse = options.toBatchResponse
         , fromDictToItem = fromDictToItem
         }
@@ -165,7 +160,8 @@ andThen toResponse response =
 
 
 toCmd :
-    { onSuccess : value -> Cmd msg
+    { info : Info
+    , onSuccess : value -> Cmd msg
     , onFailure : String -> Cmd msg
     , onDatabaseQuery :
         { sql : String
@@ -208,7 +204,7 @@ toCmd options response =
             sendMessage
                 (options.onBatchQuery
                     { id = query.id
-                    , info = query.info
+                    , info = options.info
                     , onResponse = onResponse
                     }
                 )

@@ -59,7 +59,6 @@ is returning `Schema.Post` items, we would need something like this:
 -}
 forListOfValues :
     { id : KeyId
-    , info : Info
     , fetchEdges : List KeyId -> Database.Query.Query a (List edge)
     , fetchValues : List edge -> Database.Query.Query b (List value)
     , fromEdgeToKeyId : edge -> KeyId
@@ -119,14 +118,12 @@ forListOfValues options =
     in
     GraphQL.Response.fromBatchQueryForList
         { id = options.id
-        , info = options.info
         , toBatchResponse = toBatchResponse
         }
 
 
 forMaybeValue :
     { id : KeyId
-    , info : Info
     , fetchEdges : List KeyId -> Database.Query.Query a (List edge)
     , fetchValues : List edge -> Database.Query.Query b (List value)
     , fromEdgeToKeyId : edge -> KeyId
@@ -191,6 +188,5 @@ forMaybeValue options =
     in
     GraphQL.Response.fromBatchQueryForMaybe
         { id = options.id
-        , info = options.info
         , toBatchResponse = toBatchResponse
         }
