@@ -21,7 +21,7 @@ resolver (Schema.User user) args =
         , fetchValues = fetchPosts
         , fromEdgeToKeyId = .userId
         , fromEdgeToValueId = .postId
-        , fromValueToValueId = \(Schema.Post post) -> post.id
+        , fromValueToValueId = Schema.Post.id
         }
 
 
@@ -29,10 +29,10 @@ fetchEdges : List Int -> Table.UserAuthoredPost.Query (List UserAuthoredPost)
 fetchEdges userIds =
     Table.UserAuthoredPost.findAll
         { select = Schema.UserAuthoredPost.selectAll
+        , where_ = Just (Table.UserAuthoredPost.Where.UserId.in_ userIds)
         , limit = Nothing
         , offset = Nothing
         , orderBy = Nothing
-        , where_ = Just (Table.UserAuthoredPost.Where.UserId.in_ userIds)
         }
 
 
@@ -40,8 +40,8 @@ fetchPosts : List UserAuthoredPost -> Table.Posts.Query (List Post)
 fetchPosts edges =
     Table.Posts.findAll
         { select = Schema.Post.selectAll
+        , where_ = Just (Table.Posts.Where.Id.in_ (List.map .postId edges))
         , limit = Nothing
         , offset = Nothing
         , orderBy = Nothing
-        , where_ = Just (Table.Posts.Where.Id.in_ (List.map .postId edges))
         }
