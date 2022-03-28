@@ -117,7 +117,7 @@ query {
 
 This GraphQL request will be sent to [our Query.posts resolver](./src/Resolvers/Query/Posts.elm), which lists the first 25 posts in the system. If we repeated the previous strategy for each of those posts– that would mean 3 * 25... 75 SQL queries!?
 
-Luckily for us, all our resolvers can access [an `info` argument for the GraphQL query](https://graphql.org/learn/execution/#root-fields-resolvers). This allows us to ask the question: "Does this request need authors?"
+Luckily for us, all our resolvers can access [an `info` argument for the GraphQL query](https://graphql.org/learn/execution/#root-fields-resolvers). This allows us to perform these queries in bulk– using a similar approach to Facebook's DataLoader! 
 
 If the answer is yes, we use SQL's `IN` keyword to fetch author information for all 25 posts using only 3 SQL statements! (This would still only need 3 queries if we brought back 10, 100, or 1000 posts):
 
@@ -138,4 +138,4 @@ SELECT postId, userId FROM user_authored_post WHERE postId IN ( 1, 2, 3, ... 25 
 SELECT id, username FROM users WHERE id IN ( 1, 2, 3, 4, ... );
 ```
 
-Using this `WHERE id IN ...` strategy helps us avoid a common GraphQL pitfall called the [N + 1 problem](https://medium.com/the-marcy-lab-school/what-is-the-n-1-problem-in-graphql-dd4921cb3c1a). You can see this in action yourself by pulling this repo, spinning it up with NPM, and querying for some posts at http://localhost:4000!
+Using this `WHERE id IN ...` strategy helps us avoid a common GraphQL pitfall called the [N + 1 problem](https://www.youtube.com/watch?v=ld2_AS4l19g). Try making nested queries, and see the SQL that is generated!
