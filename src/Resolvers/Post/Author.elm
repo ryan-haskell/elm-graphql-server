@@ -1,6 +1,5 @@
 module Resolvers.Post.Author exposing (resolver)
 
-import Database.Include
 import GraphQL.Info exposing (Info)
 import GraphQL.Response exposing (Response)
 import List.Extra
