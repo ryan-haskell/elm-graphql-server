@@ -23,19 +23,10 @@ argumentsDecoder =
         (Json.Decode.field "id" Json.Decode.int)
 
 
-resolver : Info -> () -> Arguments -> Response (Maybe User)
-resolver info _ args =
-    let
-        fetchUser =
-            Table.Users.findOne
-                { where_ = Just (Table.Users.Where.Id.equals args.id)
-                , select = Schema.User.selectAll
-                }
-                |> GraphQL.Response.fromDatabaseQuery
-    in
-    if GraphQL.Info.hasSelection "posts" info then
-        fetchUser
-            |> GraphQL.Response.andThen Resolvers.User.Posts.includeForMaybe
-
-    else
-        fetchUser
+resolver : () -> Arguments -> Response (Maybe User)
+resolver _ args =
+    Table.Users.findOne
+        { where_ = Just (Table.Users.Where.Id.equals args.id)
+        , select = Schema.User.selectAll
+        }
+        |> GraphQL.Response.fromDatabaseQuery

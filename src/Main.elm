@@ -1,8 +1,9 @@
 module Main exposing (main)
 
+import AssocList
 import Dict exposing (Dict)
 import GraphQL.Context
-import GraphQL.Info
+import GraphQL.Info exposing (Info)
 import GraphQL.Response exposing (Response)
 import Json.Decode
 import Json.Encode
@@ -34,7 +35,7 @@ import Schema.User
 import Time
 
 
-main : Program Json.Decode.Value Model Msg
+main : Program () Model Msg
 main =
     Platform.worker
         { init = init
@@ -47,13 +48,31 @@ main =
 -- INIT
 
 
+type alias ResolverId =
+    String
+
+
+type alias BatchResolverId =
+    String
+
+
 type alias Model =
-    { onResponse : Maybe (Json.Decode.Value -> Cmd Msg)
+    { batchResponseDict : Dict BatchResolverId (List (List Int -> Cmd Msg))
+    , databaseResponseDict : AssocList.Dict ResolverId (Json.Decode.Value -> Cmd Msg)
     }
 
 
-init : Json.Decode.Value -> ( Model, Cmd Msg )
-init flags =
+init : () -> ( Model, Cmd Msg )
+init () =
+    ( { batchResponseDict = Dict.empty
+      , databaseResponseDict = AssocList.empty
+      }
+    , Cmd.none
+    )
+
+
+runResolver : ResolverId -> Json.Decode.Value -> Cmd Msg
+runResolver resolverId request =
     let
         objectAndFieldResult : Result Json.Decode.Error ( String, String )
         objectAndFieldResult =
@@ -62,21 +81,22 @@ init flags =
                     (Json.Decode.field "objectName" Json.Decode.string)
                     (Json.Decode.field "fieldName" Json.Decode.string)
                 )
-                flags
+                request
 
         context : GraphQL.Context.Context
         context =
-            GraphQL.Context.fromJson "context" flags
+            GraphQL.Context.fromJson "context" request
 
         info : GraphQL.Info.Info
         info =
-            GraphQL.Info.fromJson "info" flags
+            GraphQL.Info.fromJson "info" request
     in
-    ( { onResponse = Nothing }
-    , case objectAndFieldResult of
+    case objectAndFieldResult of
         Ok ( "Query", "hello" ) ->
             createResolver
-                { flags = flags
+                { resolverId = resolverId
+                , request = request
+                , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Query.Hello.argumentDecoder
                 , resolver = Resolvers.Query.Hello.resolver
@@ -85,97 +105,119 @@ init flags =
 
         Ok ( "Query", "user" ) ->
             createResolver
-                { flags = flags
+                { resolverId = resolverId
+                , request = request
+                , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Query.User.argumentsDecoder
-                , resolver = Resolvers.Query.User.resolver info
+                , resolver = Resolvers.Query.User.resolver
                 , toJson = Json.Encode.Extra.maybe Schema.User.encode
                 }
 
         Ok ( "Query", "users" ) ->
             createResolver
-                { flags = flags
+                { resolverId = resolverId
+                , request = request
+                , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Json.Decode.succeed ()
-                , resolver = Resolvers.Query.Users.resolver info
+                , resolver = Resolvers.Query.Users.resolver
                 , toJson = Json.Encode.list Schema.User.encode
                 }
 
         Ok ( "Query", "post" ) ->
             createResolver
-                { flags = flags
+                { resolverId = resolverId
+                , request = request
+                , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Query.Post.argumentsDecoder
-                , resolver = Resolvers.Query.Post.resolver info
+                , resolver = Resolvers.Query.Post.resolver
                 , toJson = Json.Encode.Extra.maybe Schema.Post.encode
                 }
 
         Ok ( "Query", "posts" ) ->
             createResolver
-                { flags = flags
+                { resolverId = resolverId
+                , request = request
+                , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Json.Decode.succeed ()
-                , resolver = Resolvers.Query.Posts.resolver info
+                , resolver = Resolvers.Query.Posts.resolver
                 , toJson = Json.Encode.list Schema.Post.encode
                 }
 
         Ok ( "Mutation", "createPost" ) ->
             createResolver
-                { flags = flags
+                { resolverId = resolverId
+                , request = request
+                , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.CreatePost.argumentsDecoder
-                , resolver = Resolvers.Mutation.CreatePost.resolver info context
+                , resolver = Resolvers.Mutation.CreatePost.resolver context
                 , toJson = Schema.Post.encode
                 }
 
         Ok ( "Mutation", "updatePost" ) ->
             createResolver
-                { flags = flags
+                { resolverId = resolverId
+                , request = request
+                , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.UpdatePost.argumentsDecoder
-                , resolver = Resolvers.Mutation.UpdatePost.resolver info
+                , resolver = Resolvers.Mutation.UpdatePost.resolver
                 , toJson = Json.Encode.Extra.maybe Schema.Post.encode
                 }
 
         Ok ( "Mutation", "deletePost" ) ->
             createResolver
-                { flags = flags
+                { resolverId = resolverId
+                , request = request
+                , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.DeletePost.argumentsDecoder
-                , resolver = Resolvers.Mutation.DeletePost.resolver info
+                , resolver = Resolvers.Mutation.DeletePost.resolver
                 , toJson = Json.Encode.Extra.maybe Schema.Post.encode
                 }
 
         Ok ( "Mutation", "createUser" ) ->
             createResolver
-                { flags = flags
+                { resolverId = resolverId
+                , request = request
+                , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.CreateUser.argumentsDecoder
-                , resolver = Resolvers.Mutation.CreateUser.resolver info
+                , resolver = Resolvers.Mutation.CreateUser.resolver
                 , toJson = Schema.User.encode
                 }
 
         Ok ( "Mutation", "updateUser" ) ->
             createResolver
-                { flags = flags
+                { resolverId = resolverId
+                , request = request
+                , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.UpdateUser.argumentsDecoder
-                , resolver = Resolvers.Mutation.UpdateUser.resolver info
+                , resolver = Resolvers.Mutation.UpdateUser.resolver
                 , toJson = Json.Encode.Extra.maybe Schema.User.encode
                 }
 
         Ok ( "Mutation", "deleteUser" ) ->
             createResolver
-                { flags = flags
+                { resolverId = resolverId
+                , request = request
+                , info = info
                 , parentDecoder = Json.Decode.succeed ()
                 , argsDecoder = Resolvers.Mutation.DeleteUser.argumentsDecoder
-                , resolver = Resolvers.Mutation.DeleteUser.resolver info
+                , resolver = Resolvers.Mutation.DeleteUser.resolver
                 , toJson = Json.Encode.Extra.maybe Schema.User.encode
                 }
 
         Ok ( "User", "id" ) ->
             createResolver
-                { flags = flags
+                { resolverId = resolverId
+                , request = request
+                , info = info
                 , parentDecoder = Schema.User.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.User.Id.resolver
@@ -184,7 +226,9 @@ init flags =
 
         Ok ( "User", "username" ) ->
             createResolver
-                { flags = flags
+                { resolverId = resolverId
+                , request = request
+                , info = info
                 , parentDecoder = Schema.User.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.User.Username.resolver
@@ -193,7 +237,9 @@ init flags =
 
         Ok ( "User", "avatarUrl" ) ->
             createResolver
-                { flags = flags
+                { resolverId = resolverId
+                , request = request
+                , info = info
                 , parentDecoder = Schema.User.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.User.AvatarUrl.resolver
@@ -202,16 +248,20 @@ init flags =
 
         Ok ( "User", "posts" ) ->
             createResolver
-                { flags = flags
+                { resolverId = resolverId
+                , request = request
+                , info = info
                 , parentDecoder = Schema.User.decoder
                 , argsDecoder = Json.Decode.succeed ()
-                , resolver = Resolvers.User.Posts.resolver
+                , resolver = Resolvers.User.Posts.resolver info
                 , toJson = Json.Encode.list Schema.Post.encode
                 }
 
         Ok ( "Post", "id" ) ->
             createResolver
-                { flags = flags
+                { resolverId = resolverId
+                , request = request
+                , info = info
                 , parentDecoder = Schema.Post.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Post.Id.resolver
@@ -220,7 +270,9 @@ init flags =
 
         Ok ( "Post", "imageUrls" ) ->
             createResolver
-                { flags = flags
+                { resolverId = resolverId
+                , request = request
+                , info = info
                 , parentDecoder = Schema.Post.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Post.ImageUrls.resolver
@@ -229,7 +281,9 @@ init flags =
 
         Ok ( "Post", "caption" ) ->
             createResolver
-                { flags = flags
+                { resolverId = resolverId
+                , request = request
+                , info = info
                 , parentDecoder = Schema.Post.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Post.Caption.resolver
@@ -238,7 +292,9 @@ init flags =
 
         Ok ( "Post", "createdAt" ) ->
             createResolver
-                { flags = flags
+                { resolverId = resolverId
+                , request = request
+                , info = info
                 , parentDecoder = Schema.Post.decoder
                 , argsDecoder = Json.Decode.succeed ()
                 , resolver = Resolvers.Post.CreatedAt.resolver
@@ -247,29 +303,35 @@ init flags =
 
         Ok ( "Post", "author" ) ->
             createResolver
-                { flags = flags
+                { resolverId = resolverId
+                , request = request
+                , info = info
                 , parentDecoder = Schema.Post.decoder
                 , argsDecoder = Json.Decode.succeed ()
-                , resolver = Resolvers.Post.Author.resolver
+                , resolver = Resolvers.Post.Author.resolver info
                 , toJson = Json.Encode.Extra.maybe Schema.User.encode
                 }
 
         Ok ( objectName, fieldName ) ->
             Ports.failure
-                (Json.Encode.string
-                    ("Did not recognize {{objectName}}.{{fieldName}}"
+                { resolverId = resolverId
+                , reason =
+                    "Elm application is missing a resolver for {{objectName}}.{{fieldName}}"
                         |> String.replace "{{objectName}}" objectName
                         |> String.replace "{{fieldName}}" fieldName
-                    )
-                )
+                }
 
         Err _ ->
-            Ports.failure (Json.Encode.string "Field was not passed in.")
-    )
+            Ports.failure
+                { resolverId = resolverId
+                , reason = "Elm expected `objectName` and `fieldName` in the request."
+                }
 
 
 createResolver :
-    { flags : Json.Decode.Value
+    { resolverId : ResolverId
+    , info : Info
+    , request : Json.Decode.Value
     , parentDecoder : Json.Decode.Decoder parent
     , argsDecoder : Json.Decode.Decoder args
     , resolver : parent -> args -> Response value
@@ -284,18 +346,36 @@ createResolver options =
                 (Json.Decode.field "parent" options.parentDecoder)
                 (Json.Decode.field "args" options.argsDecoder)
     in
-    case Json.Decode.decodeValue inputDecoder options.flags of
+    case Json.Decode.decodeValue inputDecoder options.request of
         Ok { parent, args } ->
             options.resolver parent args
                 |> GraphQL.Response.toCmd
-                    { onSuccess = options.toJson >> Ports.success
-                    , onFailure = Ports.failure
-                    , onDatabaseQuery = ResolverSentDatabaseQuery
+                    { onSuccess =
+                        \value ->
+                            Ports.success
+                                { resolverId = options.resolverId
+                                , value = options.toJson value
+                                }
+                    , onFailure =
+                        \reason ->
+                            Ports.failure
+                                { resolverId = options.resolverId
+                                , reason = reason
+                                }
+                    , onDatabaseQuery =
+                        ElmSentDatabaseQuery
+                            options.resolverId
+                            (GraphQL.Info.toBatchId options.info)
+                    , onBatchQuery =
+                        ElmSentBatchRequest
+                            options.resolverId
                     }
 
         Err _ ->
-            Json.Encode.string "Failed to decode parent/args."
-                |> Ports.failure
+            Ports.failure
+                { resolverId = options.resolverId
+                , reason = "Failed to decode parent/args."
+                }
 
 
 
@@ -303,33 +383,96 @@ createResolver options =
 
 
 type Msg
-    = ResolverSentDatabaseQuery
+    = ElmSentDatabaseQuery
+        ResolverId
+        BatchResolverId
         { sql : String
         , onResponse : Json.Decode.Value -> Cmd Msg
         }
+    | ElmSentBatchRequest
+        ResolverId
+        { id : Int
+        , info : Info
+        , onResponse : List Int -> Cmd Msg
+        }
     | JavascriptSentDatabaseResponse
-        { response : Json.Decode.Value
+        { resolverId : ResolverId
+        , response : Json.Decode.Value
+        }
+    | JavascriptSentBatchResponse
+        { resolverId : ResolverId
+        , batchId : BatchResolverId
+        , ids : List Int
+        }
+    | JavascriptRequestedResolver
+        { resolverId : ResolverId
+        , request : Json.Decode.Value
         }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        ResolverSentDatabaseQuery options ->
-            ( { model | onResponse = Just options.onResponse }
-            , Ports.databaseOut { sql = options.sql }
+        -- case Debug.log "msg" msg of
+        ElmSentDatabaseQuery resolverId batchId options ->
+            ( { model | databaseResponseDict = AssocList.insert resolverId options.onResponse model.databaseResponseDict }
+            , Ports.databaseOut
+                { resolverId = resolverId
+                , batchId = batchId
+                , sql = options.sql
+                }
             )
 
-        JavascriptSentDatabaseResponse { response } ->
-            case model.onResponse of
+        ElmSentBatchRequest resolverId options ->
+            let
+                addCmdToList : Maybe (List (List Int -> Cmd Msg)) -> Maybe (List (List Int -> Cmd Msg))
+                addCmdToList maybeList =
+                    maybeList
+                        |> Maybe.withDefault []
+                        |> (\list -> options.onResponse :: list)
+                        |> Just
+            in
+            ( { model | batchResponseDict = Dict.update (GraphQL.Info.toBatchId options.info) addCmdToList model.batchResponseDict }
+            , Ports.batchRequestOut
+                { resolverId = resolverId
+                , id = options.id
+                , batchId = GraphQL.Info.toBatchId options.info
+                }
+            )
+
+        JavascriptRequestedResolver { resolverId, request } ->
+            ( model
+            , runResolver resolverId request
+            )
+
+        JavascriptSentDatabaseResponse { resolverId, response } ->
+            case AssocList.get resolverId model.databaseResponseDict of
                 Just onResponse ->
-                    ( { model | onResponse = Nothing }
+                    ( { model | databaseResponseDict = AssocList.remove resolverId model.databaseResponseDict }
                     , onResponse response
                     )
 
                 Nothing ->
                     ( model
-                    , Ports.failure (Json.Encode.string "Unexpected response from the database.")
+                    , Ports.failure
+                        { resolverId = resolverId
+                        , reason = "Unexpected database response from JavaScript."
+                        }
+                    )
+
+        JavascriptSentBatchResponse { resolverId, batchId, ids } ->
+            case Dict.get batchId model.batchResponseDict of
+                Just listOfHandlers ->
+                    ( { model | batchResponseDict = Dict.remove batchId model.batchResponseDict }
+                    , Cmd.batch (List.map (\onResponse -> onResponse ids) listOfHandlers)
+                    )
+
+                Nothing ->
+                    ( model
+                    , Ports.failure
+                        { resolverId = resolverId
+                        , reason = "Unexpected batch response from JavaScript."
+                        }
                     )
 
 
@@ -339,4 +482,8 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Ports.databaseIn JavascriptSentDatabaseResponse
+    Sub.batch
+        [ Ports.databaseIn JavascriptSentDatabaseResponse
+        , Ports.batchIn JavascriptSentBatchResponse
+        , Ports.runResolver JavascriptRequestedResolver
+        ]

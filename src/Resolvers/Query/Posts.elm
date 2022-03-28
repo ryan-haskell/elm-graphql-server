@@ -16,27 +16,13 @@ import Table.Users
 import Table.Users.Where.Id
 
 
-resolver : Info -> () -> () -> Response (List Post)
-resolver info _ args =
-    let
-        isSelectingAuthor : Bool
-        isSelectingAuthor =
-            GraphQL.Info.hasSelection "author" info
-
-        postsQuery : Response (List Post)
-        postsQuery =
-            Table.Posts.findAll
-                { select = Schema.Post.selectAll
-                , where_ = Nothing
-                , orderBy = Just (Database.Order.descending Table.Posts.Column.createdAt)
-                , limit = Just 25
-                , offset = Nothing
-                }
-                |> GraphQL.Response.fromDatabaseQuery
-    in
-    if isSelectingAuthor then
-        postsQuery
-            |> GraphQL.Response.andThen Resolvers.Post.Author.includeForList
-
-    else
-        postsQuery
+resolver : () -> () -> Response (List Post)
+resolver _ args =
+    Table.Posts.findAll
+        { select = Schema.Post.selectAll
+        , where_ = Nothing
+        , orderBy = Just (Database.Order.descending Table.Posts.Column.createdAt)
+        , limit = Just 25
+        , offset = Nothing
+        }
+        |> GraphQL.Response.fromDatabaseQuery

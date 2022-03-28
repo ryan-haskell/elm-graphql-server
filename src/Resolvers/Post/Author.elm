@@ -1,17 +1,7 @@
-module Resolvers.Post.Author exposing
-    ( resolver
-    , include, includeForList, includeForMaybe
-    )
-
-{-|
-
-@docs resolver
-
-@docs include, includeForList, includeForMaybe
-
--}
+module Resolvers.Post.Author exposing (resolver)
 
 import Database.Include
+import GraphQL.Info exposing (Info)
 import GraphQL.Response exposing (Response)
 import List.Extra
 import Schema
@@ -25,49 +15,39 @@ import Table.Users
 import Table.Users.Where.Id
 
 
-resolver : Post -> () -> Response (Maybe User)
-resolver (Schema.Post post) args =
-    GraphQL.Response.ok post.author
-
-
-include : Post -> Response Post
-include post =
-    Database.Include.fromListToItem
-        includeForList
-        post
-
-
-includeForMaybe : Maybe Post -> Response (Maybe Post)
-includeForMaybe maybePost =
-    Database.Include.fromListToMaybe
-        includeForList
-        maybePost
-
-
-includeForList : List Post -> Response (List Post)
-includeForList posts =
-    fetchUserAuthoredPostEdges posts
-        |> GraphQL.Response.andThen (fetchAuthorsFor posts)
+resolver : Info -> Post -> () -> Response (Maybe User)
+resolver info (Schema.Post post) args =
+    GraphQL.Response.batchMaybe
+        { id = post.id
+        , info = info
+        , toBatchResponse = toBatchResponse
+        }
 
 
 
 -- INTERNALS
 
 
-fetchUserAuthoredPostEdges : List Post -> Response (List UserAuthoredPost)
-fetchUserAuthoredPostEdges posts =
+toBatchResponse : List Int -> Response (List (Maybe User))
+toBatchResponse postIds =
+    fetchUserAuthoredPostEdges postIds
+        |> GraphQL.Response.andThen (fetchUsersAndGroupByPostId postIds)
+
+
+fetchUserAuthoredPostEdges : List Int -> Response (List UserAuthoredPost)
+fetchUserAuthoredPostEdges postIds =
     Table.UserAuthoredPost.findAll
         { select = Schema.UserAuthoredPost.selectAll
         , limit = Nothing
         , offset = Nothing
         , orderBy = Nothing
-        , where_ = Just (Table.UserAuthoredPost.Where.PostId.in_ (List.map Schema.Post.id posts))
+        , where_ = Just (Table.UserAuthoredPost.Where.PostId.in_ postIds)
         }
         |> GraphQL.Response.fromDatabaseQuery
 
 
-fetchAuthorsFor : List Post -> List UserAuthoredPost -> Response (List Post)
-fetchAuthorsFor posts edges =
+fetchUsers : List UserAuthoredPost -> Response (List User)
+fetchUsers edges =
     Table.Users.findAll
         { select = Schema.User.selectAll
         , limit = Nothing
@@ -76,27 +56,31 @@ fetchAuthorsFor posts edges =
         , where_ = Just (Table.Users.Where.Id.in_ (List.map .userId edges))
         }
         |> GraphQL.Response.fromDatabaseQuery
-        |> GraphQL.Response.map (fillInPostsWithAuthors posts edges)
 
 
-fillInPostsWithAuthors : List Post -> List UserAuthoredPost -> List User -> List Post
-fillInPostsWithAuthors posts edges users =
-    List.map (updatePostWithMatchingUser edges users) posts
-
-
-updatePostWithMatchingUser : List UserAuthoredPost -> List User -> Post -> Post
-updatePostWithMatchingUser edges users (Schema.Post post) =
+fetchUsersAndGroupByPostId : List Int -> List UserAuthoredPost -> Response (List (Maybe User))
+fetchUsersAndGroupByPostId postIds edges =
     let
-        edgesMatchingThisPost : List UserAuthoredPost
-        edgesMatchingThisPost =
-            List.filter (\edge -> edge.postId == post.id) edges
+        groupByPostId : List User -> List (Maybe User)
+        groupByPostId users =
+            List.map (usersForPostId users) postIds
 
-        usersMatchingThisPost : List User
-        usersMatchingThisPost =
-            List.filterMap findUserForEdge edgesMatchingThisPost
+        usersForPostId : List User -> Int -> Maybe User
+        usersForPostId users postId =
+            let
+                edgesMatchingThisPost : List UserAuthoredPost
+                edgesMatchingThisPost =
+                    List.filter (\edge -> edge.postId == postId) edges
 
-        findUserForEdge : UserAuthoredPost -> Maybe User
-        findUserForEdge edge =
-            List.Extra.find (\(Schema.User user) -> user.id == edge.userId) users
+                usersMatchingThisPost : List User
+                usersMatchingThisPost =
+                    List.filterMap findUserForEdge edgesMatchingThisPost
+
+                findUserForEdge : UserAuthoredPost -> Maybe User
+                findUserForEdge edge =
+                    List.Extra.find (\(Schema.User user) -> user.id == edge.userId) users
+            in
+            List.head usersMatchingThisPost
     in
-    Schema.Post { post | author = List.head usersMatchingThisPost }
+    fetchUsers edges
+        |> GraphQL.Response.map groupByPostId

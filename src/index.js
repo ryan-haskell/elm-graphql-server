@@ -21,13 +21,13 @@ const Database = {
       console.log(`💾 Making sure SQL database is up-to-date...`)
       let migrationsBefore = 0
       try {
-        let before = await db.get(`SELECT count(*) as count FROM migrations`)
+        const before = await db.get(`SELECT count(*) as count FROM migrations`)
         migrationsBefore = before.count
       } catch {}
       await db.migrate()
-      let { count: migrationsAfter } = await db.get(`SELECT count(*) as count FROM migrations`)
+      const { count: migrationsAfter } = await db.get(`SELECT count(*) as count FROM migrations`)
 
-      let newMigrationsRun = migrationsAfter - migrationsBefore
+      const newMigrationsRun = migrationsAfter - migrationsBefore
       if (newMigrationsRun === 1) {
         console.info(`💾 Ran ${newMigrationsRun} migration!`)
       } else if (newMigrationsRun > 1) {
@@ -42,59 +42,132 @@ const Database = {
 // Silent temporarily mutes console.warn
 // to hide Elm's "DEV MODE" warnings on import
 const silent = (fn) => {
-  let warn = console.warn
+  const warn = console.warn
   console.warn = () => undefined
-  let value = fn()
+  const value = fn()
   console.warn = warn
   return value
 }
 const { Elm } = silent(() => require("../dist/elm.worker"))
 
-// Import schema.gql
-const typeDefs = fs.readFileSync(path.join(__dirname, "schema.gql"), {
-  encoding: "utf8",
-})
+// Import GraphQL schema from file
+const typeDefs = fs.readFileSync(
+  path.join(__dirname, "schema.gql"),
+  { encoding: "utf8" }
+)
 
-// Define dynamic resolvers, using a JS object proxy
+const toUniqueResolverId = (path) => {
+  let key = typeof path.key === 'string' ? path.key : `[${path.key}]`
+  if (path.prev) {
+    return toUniqueResolverId(path.prev) + "." + key
+  } else {
+    return key
+  }
+}
+
+// GraphQL resolvers are dynamically generated
 const fieldHandler = (objectName) => ({
-  get (target, fieldName, receiver) {
+  get (_, fieldName) {
     if (fieldName === "__isTypeOf") return () => objectName
     return (parent, args, context, info) => {
-      let worker = Elm.Main.init({
-        flags: { objectName, fieldName, parent, args, context, info },
-      })
+      const resolverId = toUniqueResolverId(info.path)
+
+      context.worker.ports.runResolver.send({ resolverId, request: { objectName, fieldName, parent, args, context, info } })
 
       return new Promise((resolve, reject) => {
-        worker.ports.success.subscribe(resolve)
-        worker.ports.failure.subscribe((json) => reject(Error(json)))
-        worker.ports.databaseOut.subscribe(async ({ sql }) => {
-          console.log(`\n\n💾 ${sql}\n`)
-          let response = await context.db.all(sql)
-          console.table(response)
+        const handlers = {
+          SUCCESS: (value) => {
+            resolve(value)
+          },
+          FAILURE: (reason) => reject(Error(reason)),
+          DATABASE_OUT: async ({ sql, batchId }) => {
+            const key = batchId + sql
+            const sendToElm = (response) => context.worker.ports.databaseIn.send({ resolverId, response })
 
-          worker.ports.databaseIn.send({ response })
+            if (context.sqlCache[key]) {
+              const cachedResponse = context.sqlCache[key].response
+
+              if (cachedResponse) {
+                // If this SQL statement has already run, return the cached result
+                sendToElm(cachedResponse)
+              } else {
+                // If this SQL statement is currently being run, add yourself to
+                // the list of resolvers needing the data.
+                context.sqlCache[key].subscribers.push(sendToElm)
+              }
+            } else {
+              // If you're the first one here, run the SQL query!
+              context.sqlCache[key] = { subscribers: [], response: undefined }
+
+              console.log(`\n\n💾 ${sql}\n`)
+              let response = await context.db.all(sql)
+              console.table(response)
+
+              sendToElm(response)
+
+              // Let everyone else know
+              context.sqlCache[key].response = response
+              context.sqlCache[key].subscribers.forEach(otherResolversNeedingData => {
+                otherResolversNeedingData(response)
+              })
+            }
+          },
+          BATCH_OUT: async ({ id, batchId }) => {
+            if (context.batchRequestIds[batchId] === undefined) {
+              context.batchRequestIds[batchId] = []
+
+              setTimeout(() => {
+                context.worker.ports.batchIn.send({
+                  resolverId,
+                  batchId,
+                  ids: context.batchRequestIds[batchId]
+                })
+              })
+            }
+
+            context.batchRequestIds[batchId].push(id)
+          }
+        }
+
+        context.worker.ports.outgoing.subscribe(msg => {
+          // This conditional is critical for our resolver to work,
+          // because it ignores any Elm messages from other resolvers
+          // console.log(msg.tag, msg.resolverId)
+          if (msg.resolverId === resolverId) {
+            const handler = handlers[msg.tag]
+            if (handler) {
+              handler(msg.payload)
+            } else {
+              console.warn(`❗️ Unrecognized port tag: ${msg.tag}`)
+            }
+          } else {
+          }
         })
       })
     }
   },
 })
 
-const resolvers = new Proxy({}, {
-  get(target, objectName, receiver) {
-    return new Proxy({}, fieldHandler(objectName))
-  }
-})
-
 // The function to run when the server starts up
 const start = async () => {
   // Start up sqlite database
-  let db = await Database.start()
+  const db = await Database.start()
 
   // Start GraphQL server
   const server = new ApolloServer({
     typeDefs,
-    resolvers,
+    resolvers: new Proxy({}, {
+      get(_, objectName) {
+        return new Proxy({}, fieldHandler(objectName))
+      }
+    }),
     context: ({ req }) => ({
+      // Each GraphQL request gets it's own Elm program
+      worker: Elm.Main.init(),
+      // Allows us to prevent the N+1 problem, and batch similar requests
+      batchRequestIds: {},
+      // Allows us to guarantee batched SQL statements only execute once
+      sqlCache: {},
       currentUserId: req.header('Authorization'),
       db
     }),

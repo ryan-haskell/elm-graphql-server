@@ -8,22 +8,13 @@ import Table.Users
 import Table.Users.Select
 
 
-resolver : Info -> () -> () -> Response (List User)
-resolver info _ args =
-    let
-        fetchUsers =
-            Table.Users.findAll
-                { where_ = Nothing
-                , limit = Just 25
-                , offset = Nothing
-                , orderBy = Nothing
-                , select = Schema.User.selectAll
-                }
-                |> GraphQL.Response.fromDatabaseQuery
-    in
-    if GraphQL.Info.hasSelection "posts" info then
-        fetchUsers
-            |> GraphQL.Response.andThen Resolvers.User.Posts.includeForList
-
-    else
-        fetchUsers
+resolver : () -> () -> Response (List User)
+resolver _ args =
+    Table.Users.findAll
+        { where_ = Nothing
+        , limit = Just 25
+        , offset = Nothing
+        , orderBy = Nothing
+        , select = Schema.User.selectAll
+        }
+        |> GraphQL.Response.fromDatabaseQuery
