@@ -16,7 +16,7 @@ argumentDecoder =
 
 
 resolver : () -> Arguments -> Response String
-resolver parent args =
+resolver _ args =
     case args.name of
         Just name ->
             GraphQL.Response.ok ("Hey, " ++ name ++ "!")

@@ -1,10 +1,8 @@
 module Resolvers.User.Posts exposing (resolver)
 
-import Database.Query
 import GraphQL.Batch
-import GraphQL.Info exposing (Info)
 import GraphQL.Response exposing (Response)
-import Schema exposing (Post, User)
+import Schema exposing (Post)
 import Schema.Post
 import Schema.UserAuthoredPost exposing (UserAuthoredPost)
 import Table.Posts
@@ -14,7 +12,7 @@ import Table.UserAuthoredPost.Where.UserId
 
 
 resolver : Schema.User -> () -> Response (List Post)
-resolver (Schema.User user) args =
+resolver (Schema.User user) _ =
     GraphQL.Batch.forListOfValues
         { id = user.id
         , fetchEdges = fetchEdges

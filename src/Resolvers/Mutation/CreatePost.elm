@@ -1,18 +1,14 @@
 module Resolvers.Mutation.CreatePost exposing (argumentsDecoder, resolver)
 
 import GraphQL.Context exposing (Context)
-import GraphQL.Info exposing (Info)
 import GraphQL.Response
 import Json.Decode
-import Resolvers.Post.Author
 import Schema.Post exposing (Post)
 import Schema.UserAuthoredPost
 import Table.Posts
-import Table.Posts.Select
 import Table.Posts.Value
 import Table.UserAuthoredPost
 import Table.UserAuthoredPost.Value
-import Table.Users
 
 
 type alias Arguments =

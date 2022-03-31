@@ -1,7 +1,6 @@
 module Resolvers.Post.Author exposing (resolver)
 
 import GraphQL.Batch
-import GraphQL.Info exposing (Info)
 import GraphQL.Response exposing (Response)
 import Schema exposing (Post, User)
 import Schema.User
@@ -13,7 +12,7 @@ import Table.Users.Where.Id
 
 
 resolver : Post -> () -> Response (Maybe User)
-resolver (Schema.Post post) args =
+resolver (Schema.Post post) _ =
     GraphQL.Batch.forMaybeValue
         { id = post.id
         , fetchEdges = fetchEdges

@@ -5,5 +5,5 @@ import Schema
 
 
 resolver : Schema.User -> () -> Response (Maybe String)
-resolver (Schema.User user) args =
+resolver (Schema.User user) _ =
     GraphQL.Response.ok user.avatarUrl

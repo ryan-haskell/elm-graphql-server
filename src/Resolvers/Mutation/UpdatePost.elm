@@ -1,13 +1,10 @@
 module Resolvers.Mutation.UpdatePost exposing (argumentsDecoder, resolver)
 
-import GraphQL.Info exposing (Info)
 import GraphQL.Response
 import Json.Decode
 import Optional exposing (Optional)
-import Resolvers.Post.Author
 import Schema.Post exposing (Post)
 import Table.Posts
-import Table.Posts.Select
 import Table.Posts.Value
 import Table.Posts.Where.Id
 

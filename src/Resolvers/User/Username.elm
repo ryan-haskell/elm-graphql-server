@@ -5,5 +5,5 @@ import Schema
 
 
 resolver : Schema.User -> () -> Response String
-resolver (Schema.User user) args =
+resolver (Schema.User user) _ =
     GraphQL.Response.ok user.username

@@ -6,5 +6,5 @@ import Time
 
 
 resolver : Schema.Post -> () -> Response Time.Posix
-resolver (Schema.Post post) args =
+resolver (Schema.Post post) _ =
     GraphQL.Response.ok post.createdAt

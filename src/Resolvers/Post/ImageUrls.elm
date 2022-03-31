@@ -5,5 +5,5 @@ import Schema
 
 
 resolver : Schema.Post -> () -> Response (List String)
-resolver (Schema.Post post) args =
+resolver (Schema.Post post) _ =
     GraphQL.Response.ok post.imageUrls

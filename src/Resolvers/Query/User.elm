@@ -1,14 +1,9 @@
 module Resolvers.Query.User exposing (argumentsDecoder, resolver)
 
-import Database.Where
-import GraphQL.Info exposing (Info)
 import GraphQL.Response exposing (Response)
 import Json.Decode
-import Json.Encode
-import Resolvers.User.Posts
 import Schema.User exposing (User)
 import Table.Users
-import Table.Users.Select
 import Table.Users.Where.Id
 
 

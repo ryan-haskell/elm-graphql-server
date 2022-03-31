@@ -1,14 +1,9 @@
 module Resolvers.Query.Post exposing (argumentsDecoder, resolver)
 
-import Database.Where
-import GraphQL.Info exposing (Info)
 import GraphQL.Response exposing (Response)
 import Json.Decode
-import Json.Encode
-import Resolvers.Post.Author
 import Schema.Post exposing (Post)
 import Table.Posts
-import Table.Posts.Select
 import Table.Posts.Where.Id
 
 
@@ -24,7 +19,7 @@ argumentsDecoder =
 
 
 resolver : () -> Arguments -> Response (Maybe Post)
-resolver parent args =
+resolver _ args =
     Table.Posts.findOne
         { where_ = Just (Table.Posts.Where.Id.equals args.id)
         , select = Schema.Post.selectAll

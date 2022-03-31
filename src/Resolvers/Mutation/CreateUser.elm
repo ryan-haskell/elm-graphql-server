@@ -1,12 +1,9 @@
 module Resolvers.Mutation.CreateUser exposing (argumentsDecoder, resolver)
 
-import GraphQL.Info exposing (Info)
 import GraphQL.Response
 import Json.Decode
-import Resolvers.User.Posts
 import Schema.User exposing (User)
 import Table.Users
-import Table.Users.Select
 import Table.Users.Value
 
 
