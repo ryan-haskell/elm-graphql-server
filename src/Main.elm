@@ -142,7 +142,7 @@ runResolver resolverId request =
                 , request = request
                 , info = info
                 , parentDecoder = Json.Decode.succeed ()
-                , argsDecoder = Json.Decode.succeed ()
+                , argsDecoder = Resolvers.Query.Posts.argDecoder
                 , resolver = Resolvers.Query.Posts.resolver
                 , toJson = Json.Encode.list Schema.Post.encode
                 }

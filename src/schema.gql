@@ -5,7 +5,7 @@ type Query {
   users: [User!]!
 
   post(id: Int!): Post
-  posts: [Post!]!
+  posts(page: Int): [Post!]!
 }
 
 type Mutation {
@@ -16,15 +16,12 @@ type Mutation {
   createPost(imageUrls: [String!]!, caption: String!): Post!
   updatePost(id: Int!, imageUrls: [String!], caption: String): Post
   deletePost(id: Int!): Post
-
 }
-
 
 """
 The number of milliseconds since the [Unix Epoch](https://en.wikipedia.org/wiki/Unix_time)
 """
 scalar Posix
-
 
 type User {
   id: Int!
