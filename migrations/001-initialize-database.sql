@@ -31,8 +31,6 @@ CREATE TABLE user_liked_post (
 CREATE INDEX index__user_liked_post__userId ON user_liked_post (userId);
 CREATE INDEX index__user_liked_post__postId ON user_liked_post (postId);
 
-INSERT INTO users (username) VALUES ("Ryan"), ("Duncan");
-
 
 --------------------------------------------------------------------------------
 -- Down
