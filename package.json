@@ -14,7 +14,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@louislam/sqlite3": "6.0.1",
+    "@louislam/sqlite3": "15.1.2",
     "apollo-server": "3.6.4",
     "apollo-server-core": "3.6.4",
     "chokidar-cli": "3.0.0",
