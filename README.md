@@ -119,7 +119,7 @@ This GraphQL request will be sent to [our Query.posts resolver](./src/Resolvers/
 
 Luckily for us, all our resolvers can access [an `info` argument for the GraphQL query](https://graphql.org/learn/execution/#root-fields-resolvers). This allows us to perform these queries in bulk– using a similar approach to Facebook's DataLoader! 
 
-If the answer is yes, we use SQL's `IN` keyword to fetch author information for all 25 posts using only 3 SQL statements! (This would still only need 3 queries if we brought back 10, 100, or 1000 posts):
+Rather than making a query for each post, we use SQL's `IN` keyword to fetch author data for all 25 posts using only 3 SQL statements! (This would still only need 3 queries if we brought back 10, 100, or 1000 posts):
 
 ```sql
 -- First, we ask for the first 25 posts
