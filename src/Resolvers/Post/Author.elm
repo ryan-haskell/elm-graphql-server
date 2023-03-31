@@ -1,6 +1,5 @@
 module Resolvers.Post.Author exposing (resolver)
 
-import GraphQL.Batch
 import GraphQL.Response exposing (Response)
 import Schema exposing (Post, User)
 import Schema.User
@@ -13,13 +12,13 @@ import Table.Users.Where.Id
 
 resolver : Post -> () -> Response (Maybe User)
 resolver (Schema.Post post) _ =
-    GraphQL.Batch.forMaybeValue
+    GraphQL.Response.fromOneToOneQuery
         { id = post.id
         , fetchEdges = fetchEdges
-        , fetchValues = fetchUsers
-        , fromEdgeToKeyId = .postId
-        , fromEdgeToValueId = .userId
-        , fromValueToValueId = Schema.User.id
+        , fetchNodes = fetchUsers
+        , from = .postId
+        , to = .userId
+        , toId = Schema.User.id
         }
 
 

@@ -2,8 +2,8 @@ module GraphQL.Response exposing
     ( Response
     , ok, err
     , fromDatabaseQuery
-    , fromBatchQueryForMaybe
-    , fromBatchQueryForList
+    , fromOneToOneQuery
+    , fromOneToManyQuery
     , map, andThen
     , toCmd
     )
@@ -13,8 +13,8 @@ module GraphQL.Response exposing
 @docs Response
 @docs ok, err
 @docs fromDatabaseQuery
-@docs fromBatchQueryForMaybe
-@docs fromBatchQueryForList
+@docs fromOneToOneQuery
+@docs fromOneToManyQuery
 
 @docs map, andThen
 @docs toCmd
@@ -58,6 +58,206 @@ err reason =
     Failure reason
 
 
+fromDatabaseQuery : Database.Query.Query column value -> Response value
+fromDatabaseQuery query =
+    Query
+        { sql = Database.Query.toSql query
+        , onResponse =
+            \json ->
+                case Json.Decode.decodeValue (Database.Query.toDecoder query) json of
+                    Ok value ->
+                        ok value
+
+                    Err problem ->
+                        err (Json.Decode.errorToString problem)
+        }
+
+
+type alias Id =
+    Int
+
+
+
+-- ONE TO MANY RELATIONSHIPS
+
+
+{-| Useful when defining a field resolver for one-to-many relationships,
+like fetching all posts for a given user:
+
+    type User {
+        posts: [Post!]!
+    }
+
+This helper function assumes all relationships are modeled consistently, where there are two
+SQL queries needed to fetch the one-to-many relationship:
+
+  - One to query the "join table" for all edges, given a list of "key ids"
+  - One to query the "values table" for value data, based on the edges that came back from the previous query.
+
+To be concrete, if we were getting all posts for a user, here's what each of these abstract variables
+would correspond to:
+
+  - Key ID = User ID (an int)
+  - Value ID = Post ID (an int)
+  - Edge = `UserAuthoredPost`
+
+Because the `edge` is generic, this function also needs to know how to get data from the edge. For this example,
+that would mean:
+
+    type alias UserAuthoredEdge =
+        { id : Int
+        , userId : Int
+        , postId : Int
+        }
+
+  - from = `.userId`
+  - to = `.postId`
+
+Finally, we need the `toId` function to know how to get the `id` for a "value". Because our example
+is returning `Schema.Post` items, we would need something like this:
+
+  - toId = `\(Schema.Post post) -> post.id`
+
+-}
+fromOneToManyQuery :
+    { id : Id
+    , fetchEdges : List Id -> Database.Query.Query a (List edge)
+    , fetchNodes : List edge -> Database.Query.Query b (List value)
+    , from : edge -> Id
+    , to : edge -> Id
+    , toId : value -> Id
+    }
+    -> Response (List value)
+fromOneToManyQuery options =
+    let
+        toBatchResponse : List Id -> Response (Dict Id (List value))
+        toBatchResponse userIds =
+            options.fetchEdges userIds
+                |> fromDatabaseQuery
+                |> andThen toDict
+
+        toDict : List edge -> Response (Dict Id (List value))
+        toDict edges =
+            let
+                valueIdDict : Dict Id (List Id)
+                valueIdDict =
+                    edges
+                        |> List.Extra.gatherEqualsBy options.from
+                        |> List.map
+                            (\( first, rest ) ->
+                                ( options.from first
+                                , List.map options.to (first :: rest)
+                                )
+                            )
+                        |> Dict.fromList
+
+                groupByKeyId : List value -> Dict Id (List value)
+                groupByKeyId values =
+                    let
+                        updateDict : Id -> Dict Id (List value) -> Dict Id (List value)
+                        updateDict keyId dict =
+                            let
+                                valueIds : List Id
+                                valueIds =
+                                    Dict.get keyId valueIdDict
+                                        |> Maybe.withDefault []
+
+                                valuesMatchingThisKey : List value
+                                valuesMatchingThisKey =
+                                    List.filter
+                                        (\item ->
+                                            List.member (options.toId item) valueIds
+                                        )
+                                        values
+                            in
+                            Dict.insert keyId valuesMatchingThisKey dict
+                    in
+                    List.foldl updateDict Dict.empty (Dict.keys valueIdDict)
+            in
+            options.fetchNodes edges
+                |> fromDatabaseQuery
+                |> map groupByKeyId
+    in
+    fromBatchQueryForList
+        { id = options.id
+        , toBatchResponse = toBatchResponse
+        }
+
+
+fromOneToOneQuery :
+    { id : Id
+    , fetchEdges : List Id -> Database.Query.Query a (List edge)
+    , fetchNodes : List edge -> Database.Query.Query b (List value)
+    , from : edge -> Id
+    , to : edge -> Id
+    , toId : value -> Id
+    }
+    -> Response (Maybe value)
+fromOneToOneQuery options =
+    let
+        toBatchResponse : List Id -> Response (Dict Id value)
+        toBatchResponse userIds =
+            options.fetchEdges userIds
+                |> fromDatabaseQuery
+                |> andThen toDict
+
+        toDict : List edge -> Response (Dict Id value)
+        toDict edges =
+            let
+                valueIdDict : Dict Id (List Id)
+                valueIdDict =
+                    edges
+                        |> List.Extra.gatherEqualsBy options.from
+                        |> List.map
+                            (\( first, rest ) ->
+                                ( options.from first
+                                , List.map options.to (first :: rest)
+                                )
+                            )
+                        |> Dict.fromList
+
+                groupByKeyId : List value -> Dict Id value
+                groupByKeyId values =
+                    let
+                        updateDict : Id -> Dict Id value -> Dict Id value
+                        updateDict keyId dict =
+                            let
+                                valueIds : List Id
+                                valueIds =
+                                    Dict.get keyId valueIdDict
+                                        |> Maybe.withDefault []
+
+                                valuesMatchingThisKey : List value
+                                valuesMatchingThisKey =
+                                    List.filter
+                                        (\item ->
+                                            List.member (options.toId item) valueIds
+                                        )
+                                        values
+                            in
+                            case valuesMatchingThisKey of
+                                [] ->
+                                    dict
+
+                                value :: _ ->
+                                    Dict.insert keyId value dict
+                    in
+                    List.foldl updateDict Dict.empty (Dict.keys valueIdDict)
+            in
+            options.fetchNodes edges
+                |> fromDatabaseQuery
+                |> map groupByKeyId
+    in
+    fromBatchQueryForMaybe
+        { id = options.id
+        , toBatchResponse = toBatchResponse
+        }
+
+
+
+-- INTERNALS
+
+
 fromBatchQueryForMaybe :
     { id : Int
     , toBatchResponse : List Int -> Response (Dict Int value)
@@ -99,21 +299,6 @@ fromBatchQueryForList options =
         { id = options.id
         , toBatchResponse = options.toBatchResponse
         , fromDictToItem = fromDictToItem
-        }
-
-
-fromDatabaseQuery : Database.Query.Query column value -> Response value
-fromDatabaseQuery query =
-    Query
-        { sql = Database.Query.toSql query
-        , onResponse =
-            \json ->
-                case Json.Decode.decodeValue (Database.Query.toDecoder query) json of
-                    Ok value ->
-                        ok value
-
-                    Err problem ->
-                        err (Json.Decode.errorToString problem)
         }
 
 

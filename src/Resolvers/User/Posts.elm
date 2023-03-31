@@ -1,6 +1,5 @@
 module Resolvers.User.Posts exposing (resolver)
 
-import GraphQL.Batch
 import GraphQL.Response exposing (Response)
 import Schema exposing (Post)
 import Schema.Post
@@ -13,13 +12,13 @@ import Table.UserAuthoredPost.Where.UserId
 
 resolver : Schema.User -> () -> Response (List Post)
 resolver (Schema.User user) _ =
-    GraphQL.Batch.forListOfValues
+    GraphQL.Response.fromOneToManyQuery
         { id = user.id
         , fetchEdges = fetchEdges
-        , fetchValues = fetchPosts
-        , fromEdgeToKeyId = .userId
-        , fromEdgeToValueId = .postId
-        , fromValueToValueId = Schema.Post.id
+        , fetchNodes = fetchPosts
+        , from = .userId
+        , to = .postId
+        , toId = Schema.Post.id
         }
 
 
