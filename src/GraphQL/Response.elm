@@ -91,14 +91,14 @@ like fetching all posts for a given user:
 This helper function assumes all relationships are modeled consistently, where there are two
 SQL queries needed to fetch the one-to-many relationship:
 
-  - One to query the "join table" for all edges, given a list of "key ids"
+  - One to query the "join table" for all edges, given a list of "from ids"
   - One to query the "values table" for value data, based on the edges that came back from the previous query.
 
 To be concrete, if we were getting all posts for a user, here's what each of these abstract variables
 would correspond to:
 
-  - Key ID = User ID (an int)
-  - Value ID = Post ID (an int)
+  - From ID = User ID (an int)
+  - To ID = Post ID (an int)
   - Edge = `UserAuthoredPost`
 
 Because the `edge` is generic, this function also needs to know how to get data from the edge. For this example,
